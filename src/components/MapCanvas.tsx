@@ -19,15 +19,18 @@ interface Props {
 }
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
-const INK = '#123350'
+/** 키컬러 — 지도 핀·동선. 옅은 배경이라 핀 번호는 어두운 색으로 대비를 준다 */
+const KEY = '#8bc34a'
+const KEY_INK = '#1c2e10'
+const TEXT_DARK = '#123350'
 
 function pinIcon(index: number, showNumbers: boolean, active: boolean) {
   const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
-  const ring = active ? `box-shadow:0 1px 4px rgba(18,51,80,.35),0 0 0 6px rgba(18,51,80,.18);` : `box-shadow:0 1px 4px rgba(18,51,80,.35);`
+  const ring = active ? `box-shadow:0 1px 4px rgba(28,46,16,.4),0 0 0 6px rgba(139,195,74,.35);` : `box-shadow:0 1px 4px rgba(28,46,16,.4);`
   const label = showNumbers
-    ? `display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${active ? 13 : 12}px;font-family:'Suit',sans-serif;`
+    ? `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 13 : 12}px;font-family:'Suit',sans-serif;`
     : ''
-  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${INK};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
+  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${KEY};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
 }
 
 export default function MapCanvas({
@@ -97,7 +100,7 @@ export default function MapCanvas({
       polylineRef.current = new naver.maps.Polyline({
         map,
         path: positions,
-        strokeColor: INK,
+        strokeColor: KEY,
         strokeWeight: 4,
         strokeOpacity: 0.9,
         strokeLineCap: 'round',
@@ -111,7 +114,7 @@ export default function MapCanvas({
       const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
-             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${INK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Suit',sans-serif;">${
+             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Suit',sans-serif;">${
                place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
              }</span>
              ${dot}

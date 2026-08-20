@@ -101,13 +101,13 @@ export const SEED_COURSES: Course[] = [
   },
 ]
 
-export const SEED_SAVED_PLACE_IDS = [
-  'p-mw-bakery',
-  'p-gj-books',
-  'p-hg-park',
-  'p-sd-cafe',
-  'p-ss-coffee',
-  'p-hn-museum',
+export const SEED_SAVED_PLACES = [
+  { placeId: 'p-mw-bakery', memo: '아침 일찍 가면 웨이팅 없대' },
+  { placeId: 'p-gj-books', memo: '' },
+  { placeId: 'p-hg-park', memo: '노을 시간대 추천' },
+  { placeId: 'p-sd-cafe', memo: '' },
+  { placeId: 'p-ss-coffee', memo: '다음 코스에 넣을 후보' },
+  { placeId: 'p-hn-museum', memo: '' },
 ]
 
 export const DEFAULT_PREFS: Preferences = {

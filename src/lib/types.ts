@@ -33,6 +33,12 @@ export interface CoursePlace {
   transportToNext: Transport
 }
 
+export interface SavedPlace {
+  placeId: string
+  /** 저장 장소에 대한 개인 메모 */
+  memo: string
+}
+
 export type Visibility = 'private' | 'public'
 
 export interface Course {

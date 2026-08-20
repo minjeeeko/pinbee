@@ -15,10 +15,17 @@ export default function SavedPlacesScreen() {
   const course = store.draft
 
   const allSaved = useMemo(
-    () => store.savedPlaceIds.map((id) => PLACE_MAP[id]).filter(Boolean),
-    [store.savedPlaceIds],
+    () =>
+      store.savedPlaces
+        .map((sp) => {
+          const place = PLACE_MAP[sp.placeId]
+          return place ? { place, memo: sp.memo } : null
+        })
+        .filter((x): x is { place: (typeof PLACE_MAP)[string]; memo: string } => x !== null),
+    [store.savedPlaces],
   )
-  const places = allSaved.filter((p) => (cat === '전체' ? true : p.category === cat))
+  const rows = allSaved.filter(({ place }) => (cat === '전체' ? true : place.category === cat))
+  const places = rows.map((r) => r.place)
 
   const add = (placeId: string) => {
     if (!course) {
@@ -38,12 +45,8 @@ export default function SavedPlacesScreen() {
       <div className="appbar">
         <div>
           <h1 className="hero">저장 장소</h1>
-          <div className="sub">{store.savedPlaceIds.length}곳 저장됨</div>
+          <div className="sub">{store.savedPlaces.length}곳 저장됨</div>
         </div>
-        <div className="spacer" />
-        <button className="btn xs" onClick={() => navigate('/import/' + (course?.id ?? ''))}>
-          불러오기
-        </button>
       </div>
 
       <div
@@ -56,7 +59,7 @@ export default function SavedPlacesScreen() {
           border: '1px solid var(--border)',
         }}
       >
-        <MapCanvas places={places} showRoute={false} showNumbers={false} seed={17} />
+        <MapCanvas places={places} showRoute={false} showNumbers={false} />
         <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
           <span className="chip sm outline">{places.length}곳 표시 중</span>
         </div>
@@ -71,7 +74,7 @@ export default function SavedPlacesScreen() {
       </div>
 
       <div className="scroll pad" style={{ marginTop: 6 }}>
-        {places.length === 0 ? (
+        {rows.length === 0 ? (
           <Empty
             title="저장한 장소가 없어요"
             desc="장소 검색 결과에서 저장을 누르면 여기에 모여요."
@@ -82,7 +85,7 @@ export default function SavedPlacesScreen() {
             }
           />
         ) : (
-          places.map((p) => (
+          rows.map(({ place: p, memo }) => (
             <div className="card" key={p.id} style={{ padding: 12 }}>
               <div className="list-item">
                 <Thumb size="lg" />
@@ -107,6 +110,13 @@ export default function SavedPlacesScreen() {
                   </button>
                 </div>
               </div>
+              <textarea
+                className="textarea"
+                style={{ minHeight: 44, marginTop: 10 }}
+                placeholder="메모를 남겨보세요"
+                value={memo}
+                onChange={(e) => store.setSavedPlaceMemo(p.id, e.target.value)}
+              />
             </div>
           ))
         )}

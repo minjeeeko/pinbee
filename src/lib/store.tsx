@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import type { Course, CoursePlace, Preferences, Report, Transport, User, Visibility } from './types'
-import { DEFAULT_PREFS, SEED_COURSES, SEED_SAVED_PLACE_IDS } from '../data/seed'
+import type { Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
+import { DEFAULT_PREFS, SEED_COURSES, SEED_SAVED_PLACES } from '../data/seed'
 import { PLACE_MAP } from '../data/places'
 import { haversineKm, suggestTransport } from './geo'
 
@@ -14,7 +14,7 @@ interface Toast {
 interface PersistState {
   user: User | null
   courses: Course[]
-  savedPlaceIds: string[]
+  savedPlaces: SavedPlace[]
   reports: Report[]
   prefs: Preferences
   draftId: string | null
@@ -71,7 +71,7 @@ function initialState(): PersistState {
   return {
     user: null,
     courses: [...SEED_COURSES, draft],
-    savedPlaceIds: SEED_SAVED_PLACE_IDS,
+    savedPlaces: SEED_SAVED_PLACES,
     reports: [],
     prefs: DEFAULT_PREFS,
     draftId: draft.id,
@@ -99,6 +99,7 @@ interface StoreValue extends PersistState {
   setLegTransport: (courseId: string, index: number, t: Transport) => void
   setVisibility: (courseId: string, v: Visibility) => void
   toggleSavedPlace: (placeId: string) => void
+  setSavedPlaceMemo: (placeId: string, memo: string) => void
   setPrefs: (p: Preferences) => void
   addReport: (courseId: string, reason: string) => 'created' | 'duplicate'
   resolveReport: (reportId: string, status: Report['status']) => void
@@ -207,9 +208,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       toggleSavedPlace: (placeId) =>
         setState((s) => ({
           ...s,
-          savedPlaceIds: s.savedPlaceIds.includes(placeId)
-            ? s.savedPlaceIds.filter((p) => p !== placeId)
-            : [...s.savedPlaceIds, placeId],
+          savedPlaces: s.savedPlaces.some((sp) => sp.placeId === placeId)
+            ? s.savedPlaces.filter((sp) => sp.placeId !== placeId)
+            : [...s.savedPlaces, { placeId, memo: '' }],
+        })),
+      setSavedPlaceMemo: (placeId, memo) =>
+        setState((s) => ({
+          ...s,
+          savedPlaces: s.savedPlaces.map((sp) => (sp.placeId === placeId ? { ...sp, memo } : sp)),
         })),
       setPrefs: (p) => setState((s) => ({ ...s, prefs: p })),
       addReport: (courseId, reason) => {

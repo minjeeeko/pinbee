@@ -54,6 +54,10 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
       </div>
 
       <div className="scroll pad" style={{ marginTop: 12 }}>
+        <div className="tiny muted" style={{ textAlign: 'center', marginBottom: 12 }}>
+          카드를 드래그해서 동선 순서를 바꿔보세요
+        </div>
+
         <div className="between" style={{ marginBottom: 10 }}>
           <span className="tiny muted">총 이동 거리 {stats.legs.reduce((sum, l) => sum + l.distanceKm, 0).toFixed(1)}km</span>
           <button className="btn xs" onClick={() => setSuggestOpen(true)}>
@@ -75,8 +79,11 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
               <div>
                 <div
                   className={`card${active === i || dragging ? ' selected' : ''}`}
-                  style={{ padding: 12 }}
+                  style={{ padding: 12, cursor: 'grab' }}
                   onClick={() => setActive(i)}
+                  onPointerDown={handle.onPointerDown}
+                  role={handle.role}
+                  aria-label={handle['aria-label']}
                 >
                   <div className="list-item">
                     <span className={`num${active === i ? '' : ' ghost'}`}>{i + 1}</span>
@@ -89,6 +96,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                     <Thumb />
                     <button
                       className="btn xs"
+                      onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => {
                         e.stopPropagation()
                         store.removePlaceFromCourse(course.id, cp.uid)
@@ -96,7 +104,6 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                     >
                       삭제
                     </button>
-                    <span {...handle}>순서</span>
                   </div>
                 </div>
                 {leg && <LegRow leg={leg} onChangeTransport={(t) => store.setLegTransport(course.id, i, t)} />}
@@ -105,16 +112,19 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
           }}
         />
 
-        <div className="tiny muted" style={{ textAlign: 'center', margin: '14px 0' }}>
-          카드를 드래그해 동선을 수정하세요
-        </div>
-
-        <div className="row">
-          <button className="btn" onClick={() => navigate('/search/' + course.id)}>
-            장소 추가
-          </button>
-          <button className="btn primary" onClick={() => navigate('/summary/' + course.id)}>
+        <button
+          className="btn ghost block"
+          style={{ marginTop: 16 }}
+          onClick={() => navigate('/search/' + course.id)}
+        >
+          장소 추가
+        </button>
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn" onClick={() => navigate('/summary/' + course.id)}>
             동선 확인
+          </button>
+          <button className="btn primary" onClick={() => navigate('/save/' + course.id)}>
+            코스 저장
           </button>
         </div>
       </div>

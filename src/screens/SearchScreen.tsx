@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
-import { PLACES, CATEGORIES } from '../data/places'
-import { similarity } from '../lib/importParse'
-import type { Category, Place } from '../lib/types'
+import { PLACES, CATEGORIES, PLACE_MAP } from '../data/places'
+import { extractFromImage, matchPlaces, parseText, similarity } from '../lib/importParse'
+import type { Category, ImportCandidate, Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
 import { josa } from '../lib/text'
@@ -12,15 +12,24 @@ import { josa } from '../lib/text'
 export default function SearchScreen({ courseId }: { courseId?: string }) {
   const store = useStore()
   const course = courseId ? store.getCourse(courseId) : store.draft
+  const [mode, setMode] = useState<'search' | 'image'>('search')
   const [q, setQ] = useState('')
   const [cat, setCat] = useState<Category | '전체'>('전체')
   const [dupTarget, setDupTarget] = useState<Place | null>(null)
 
+  const [candidates, setCandidates] = useState<ImportCandidate[]>([])
+  const [pasteText, setPasteText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [relinkFor, setRelinkFor] = useState<ImportCandidate | null>(null)
+  const [relinkQuery, setRelinkQuery] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+
   const results = useMemo(() => {
     const query = q.trim()
+    if (!query) return []
     return PLACES.filter((p) => (cat === '전체' ? true : p.category === cat))
       .map((p) => {
-        if (!query) return { p, score: 1 }
         const hay = `${p.name} ${p.region} ${p.address} ${p.category}`
         const contains = hay.includes(query)
         const score = contains ? 1 : Math.max(similarity(query, p.name), similarity(query, p.region))
@@ -31,6 +40,12 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       .slice(0, 30)
       .map((r) => r.p)
   }, [q, cat])
+
+  const candidatePlaces = candidates
+    .filter((c) => !c.excluded && c.placeId)
+    .map((c) => ({ candidate: c, place: PLACE_MAP[c.placeId as string] }))
+    .filter((x): x is { candidate: ImportCandidate; place: Place } => !!x.place)
+  const failedCandidates = candidates.filter((c) => !c.excluded && !c.placeId)
 
   if (!course) {
     return (
@@ -57,6 +72,69 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     store.toast(`${place.name}${josa(place.name, '을', '를')} 코스에 추가했어요`)
   }
 
+  const runText = () => {
+    if (!pasteText.trim()) {
+      setImportError('붙여넣은 텍스트가 없어요.')
+      return
+    }
+    setImportError('')
+    const found = parseText(pasteText)
+    if (found.length === 0) {
+      setImportError('텍스트에서 장소 후보를 찾지 못했어요. 한 줄에 한 장소씩 입력해보세요.')
+      return
+    }
+    setCandidates((c) => [...c, ...found])
+    setPasteText('')
+  }
+
+  const runImage = async (file: File) => {
+    setBusy(true)
+    setImportError('')
+    try {
+      const found = await extractFromImage(file)
+      setCandidates((c) => [...c, ...found])
+    } catch (e) {
+      setImportError((e as Error).message)
+    } finally {
+      setBusy(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  const resultCard = (place: Place, extra?: React.ReactNode) => {
+    const added = courseHasPlace(course, place.id)
+    return (
+      <div className="card" key={place.id} style={{ padding: 12 }}>
+        <div className="list-item">
+          <Thumb size="lg" />
+          <div className="body">
+            <div className="name truncate">{place.name}</div>
+            <div className="meta truncate">
+              {place.category} · 좋아요 {place.likeCount}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+            <button className={`btn xs${added ? '' : ' primary'}`} onClick={() => add(place)}>
+              {added ? '추가됨' : '추가'}
+            </button>
+            <button
+              className="btn xs"
+              onClick={() => {
+                store.toggleSavedPlace(place.id)
+                store.toast(
+                  store.savedPlaces.some((sp) => sp.placeId === place.id) ? '저장 장소에서 제외했어요' : '저장 장소에 담았어요',
+                )
+              }}
+            >
+              {store.savedPlaces.some((sp) => sp.placeId === place.id) ? '저장됨' : '저장'}
+            </button>
+          </div>
+        </div>
+        {extra}
+      </div>
+    )
+  }
+
   return (
     <div className="screen">
       <div className="appbar">
@@ -67,7 +145,10 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
           <input
             autoFocus
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value)
+              setMode('search')
+            }}
             placeholder="장소명 · 지역 · 주소 검색"
           />
           {q && (
@@ -78,81 +159,222 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
         </div>
       </div>
 
-      <div className="chips" style={{ padding: '0 14px 10px' }}>
-        {(['전체', ...CATEGORIES] as const).map((c) => (
-          <button key={c} className={`chip sm${cat === c ? ' on' : ''}`} onClick={() => setCat(c)}>
-            {c}
+      {mode === 'search' && q.trim() === '' && (
+        <div className="scroll pad">
+          <button className="btn block" onClick={() => setMode('image')}>
+            이미지 붙여넣기
           </button>
-        ))}
-      </div>
-
-      <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
-        <MapCanvas places={results.slice(0, 12)} showRoute={false} showNumbers={false} seed={3} />
-        <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
-          <span className="chip sm outline">검색 결과 {results.length}곳</span>
+          <div className="tiny muted" style={{ marginTop: 12, textAlign: 'center' }}>
+            장소명이나 지역을 검색하거나, 캡처한 이미지를 붙여넣어 장소를 찾아보세요.
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="scroll pad" style={{ marginTop: 12 }}>
-        {results.length === 0 ? (
-          <Empty
-            title="검색 결과가 없어요"
-            desc="검색어의 철자를 확인하거나 카테고리 조건을 바꿔보세요."
-            action={
-              <button
-                className="btn"
-                onClick={() => {
-                  setQ('')
-                  setCat('전체')
+      {mode === 'search' && q.trim() !== '' && (
+        <>
+          <div className="chips" style={{ padding: '10px 20px' }}>
+            {(['전체', ...CATEGORIES] as const).map((c) => (
+              <button key={c} className={`chip sm${cat === c ? ' on' : ''}`} onClick={() => setCat(c)}>
+                {c}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <MapCanvas places={results.slice(0, 12)} showRoute={false} showNumbers={false} />
+            <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
+              <span className="chip sm outline">검색 결과 {results.length}곳</span>
+            </div>
+          </div>
+
+          <div className="scroll pad" style={{ marginTop: 12 }}>
+            {results.length === 0 ? (
+              <Empty
+                title="검색 결과가 없어요"
+                desc="검색어의 철자를 확인하거나 카테고리 조건을 바꿔보세요."
+                action={
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setQ('')
+                      setCat('전체')
+                    }}
+                  >
+                    조건 초기화
+                  </button>
+                }
+              />
+            ) : (
+              results.map((p) => resultCard(p))
+            )}
+          </div>
+        </>
+      )}
+
+      {mode === 'image' && (
+        <div className="scroll pad">
+          <button className="textbtn" onClick={() => setMode('search')} style={{ marginBottom: 6 }}>
+            검색으로 돌아가기
+          </button>
+
+          <div className="grid2" style={{ marginBottom: 14 }}>
+            <button className="btn ghost" style={{ height: 76, flexDirection: 'column', gap: 2 }} onClick={() => fileRef.current?.click()}>
+              <span>캡처 이미지</span>
+              <span className="tiny muted">업로드</span>
+            </button>
+            <button
+              className="btn ghost"
+              style={{ height: 76, flexDirection: 'column', gap: 2 }}
+              onClick={() => document.getElementById('paste-area')?.focus()}
+            >
+              <span>텍스트</span>
+              <span className="tiny muted">붙여넣기</span>
+            </button>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) runImage(f)
+            }}
+          />
+
+          <label className="field">
+            <span className="label">장소 목록 텍스트</span>
+            <textarea
+              id="paste-area"
+              className="textarea"
+              placeholder={'연남동 브런치하우스\n망원 베이커리\n한강 나들목 산책로'}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+            />
+          </label>
+          <button className="btn block" onClick={runText} disabled={busy}>
+            텍스트에서 장소 인식
+          </button>
+
+          {busy && <div className="banner" style={{ marginTop: 12 }}>이미지에서 장소명을 인식하는 중이에요…</div>}
+          {importError && (
+            <div className="banner alert" style={{ marginTop: 12 }}>
+              {importError}
+            </div>
+          )}
+
+          {candidatePlaces.length === 0 && failedCandidates.length === 0 ? (
+            <div className="tiny muted" style={{ marginTop: 16 }}>
+              캡처 이미지를 올리거나 텍스트를 붙여넣으면 장소 후보가 지도와 함께 카드로 표시돼요. 원본 이미지는 인식 후 보관하지 않아요.
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  position: 'relative',
+                  height: 168,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  border: '1px solid var(--border)',
+                  margin: '16px 0',
                 }}
               >
-                조건 초기화
-              </button>
-            }
-          />
-        ) : (
-          results.map((p) => {
-            const added = courseHasPlace(course, p.id)
-            return (
-              <div className="card" key={p.id} style={{ padding: 12 }}>
-                <div className="list-item">
-                  <Thumb size="lg" />
-                  <div className="body">
-                    <div className="name truncate">{p.name}</div>
-                    <div className="meta truncate">
-                      {p.address.replace('서울 ', '')} · {p.category}
-                    </div>
-                    {p.desc && <div className="meta truncate">{p.desc}</div>}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
-                    <button className={`btn xs${added ? '' : ' primary'}`} onClick={() => add(p)}>
-                      {added ? '추가됨' : '추가'}
-                    </button>
-                    <button
-                      className="btn xs"
-                      onClick={() => {
-                        store.toggleSavedPlace(p.id)
-                        store.toast(store.savedPlaceIds.includes(p.id) ? '저장 장소에서 제외했어요' : '저장 장소에 담았어요')
-                      }}
-                    >
-                      {store.savedPlaceIds.includes(p.id) ? '저장됨' : '저장'}
-                    </button>
-                  </div>
-                </div>
+                <MapCanvas places={candidatePlaces.map((c) => c.place)} showRoute={false} showNumbers={false} />
               </div>
-            )
-          })
-        )}
-      </div>
 
-      <div style={{ padding: '10px 14px calc(14px + var(--safe-b))', borderTop: '1px solid var(--border)', background: 'var(--canvas)' }}>
+              <div className="section-title">인식된 장소 {candidatePlaces.length}곳</div>
+              {candidatePlaces.map(({ candidate, place }) =>
+                resultCard(
+                  place,
+                  candidate.status === 'ambiguous' ? (
+                    <div className="between" style={{ marginTop: 8 }}>
+                      <span className="tiny muted">인식이 불확실해요 · “{candidate.raw}”</span>
+                      <button
+                        className="btn xs"
+                        onClick={() => {
+                          setRelinkFor(candidate)
+                          setRelinkQuery(candidate.raw)
+                        }}
+                      >
+                        연결 변경
+                      </button>
+                    </div>
+                  ) : undefined,
+                ),
+              )}
+
+              {failedCandidates.length > 0 && (
+                <>
+                  <div className="section-title">인식하지 못한 항목</div>
+                  {failedCandidates.map((c) => (
+                    <div className="card" key={c.id} style={{ padding: 12 }}>
+                      <div className="between">
+                        <span className="small truncate">“{c.raw}”</span>
+                        <button
+                          className="btn xs"
+                          onClick={() => {
+                            setRelinkFor(c)
+                            setRelinkQuery(c.raw)
+                          }}
+                        >
+                          직접 연결
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ padding: '10px 20px calc(14px + var(--safe-b))', borderTop: '1px solid var(--border)', background: 'var(--canvas)' }}>
         <div className="between">
           <span className="tiny muted">현재 코스 {course.places.length}곳</span>
-          <button className="btn sm primary" onClick={() => navigate('/edit/' + course.id)}>
-            코스 편집으로
+          <button className="btn sm primary" onClick={() => navigate('/')}>
+            내 코스로
           </button>
         </div>
       </div>
+
+      <Modal open={!!relinkFor} onClose={() => setRelinkFor(null)}>
+        <div className="modal-title">연결할 장소 선택</div>
+        <div className="searchbar" style={{ marginBottom: 12 }}>
+          <input value={relinkQuery} onChange={(e) => setRelinkQuery(e.target.value)} placeholder="장소명 검색" />
+        </div>
+        <div className="stack">
+          {matchPlaces(relinkQuery, 6).map(({ place, score }) => (
+            <div
+              className="card tap"
+              key={place.id}
+              style={{ padding: 10 }}
+              onClick={() => {
+                setCandidates((list) =>
+                  list.map((x) =>
+                    x.id === relinkFor?.id ? { ...x, placeId: place.id, status: 'matched', excluded: false } : x,
+                  ),
+                )
+                setRelinkFor(null)
+              }}
+            >
+              <div className="list-item">
+                <Thumb />
+                <div className="body">
+                  <div className="name truncate">{place.name}</div>
+                  <div className="meta truncate">
+                    {place.region} · {place.category}
+                  </div>
+                </div>
+                <span className="pill">{Math.round(score * 100)}%</span>
+              </div>
+            </div>
+          ))}
+          {matchPlaces(relinkQuery, 6).length === 0 && (
+            <div className="tiny muted">일치하는 장소가 없어요. 다른 검색어를 입력해보세요.</div>
+          )}
+        </div>
+      </Modal>
 
       <Modal open={!!dupTarget} onClose={() => setDupTarget(null)} center>
         <div className="modal-title">이미 코스에 있는 장소입니다</div>

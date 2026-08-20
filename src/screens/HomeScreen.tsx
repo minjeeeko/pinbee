@@ -2,19 +2,15 @@ import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { haversineKm } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
-import BottomSheet from '../components/BottomSheet'
-import { Empty, Modal, Thumb } from '../components/ui'
+import { Empty, Thumb } from '../components/ui'
 import { PlaceEditorModal } from '../components/common'
 
-export default function HomeScreen({ onSheetExpand }: { onSheetExpand?: (expanded: boolean) => void }) {
+export default function HomeScreen() {
   const store = useStore()
   const course = store.draft
   const [editing, setEditing] = useState<string | null>(null)
-  const [pickerOpen, setPickerOpen] = useState(false)
-  const [sheetFraction, setSheetFraction] = useState(0.44)
 
   const stats = useMemo(() => (course ? courseStats(course) : null), [course])
 
@@ -47,16 +43,16 @@ export default function HomeScreen({ onSheetExpand }: { onSheetExpand?: (expande
 
   return (
     <div className="screen">
-      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+      {/* 상단 2/3 — 지도 */}
+      <div style={{ position: 'relative', flex: 2, minHeight: 0 }}>
         <MapCanvas
           places={places}
           showRoute={false}
           showNumbers={false}
           activeIndex={null}
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
-          seed={11}
           insetTop={70}
-          insetBottom={Math.round(window.innerHeight * sheetFraction)}
+          insetBottom={16}
         />
 
         <div className="map-float" style={{ top: 10 }}>
@@ -64,96 +60,82 @@ export default function HomeScreen({ onSheetExpand }: { onSheetExpand?: (expande
             <span className="placeholder">장소·지역 검색</span>
           </button>
         </div>
+      </div>
 
-        <BottomSheet
-          snaps={[0.44, 0.86]}
-          onSnapChange={(f) => {
-            setSheetFraction(f)
-            onSheetExpand?.(f > 0.5)
-          }}
-          header={
-            <div style={{ padding: '2px 16px 8px' }}>
-              <div className="between">
-                <div style={{ minWidth: 0 }}>
-                  {course.saved && course.title && (
-                    <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
-                      {course.title}
-                    </div>
-                  )}
-                  <div className="tiny muted">{course.places.length}곳</div>
-                </div>
-                <button className="btn xs" onClick={() => setPickerOpen(true)}>
-                  코스 전환
-                </button>
-              </div>
+      {/* 하단 1/3 — 장소 카드 */}
+      <div
+        style={{
+          flex: 1,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--canvas)',
+        }}
+      >
+        <div style={{ padding: '10px 20px 6px' }}>
+          {course.saved && course.title && (
+            <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
+              {course.title}
             </div>
-          }
-        >
+          )}
+          <div className="tiny muted">{course.places.length}곳</div>
+        </div>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {course.places.length === 0 ? (
             <Empty
               title="아직 추가한 장소가 없어요"
-              desc="검색하거나 저장 장소에서 불러와 코스를 시작하세요."
+              desc="검색해서 코스를 시작하세요."
               action={
-                <div className="stack">
-                  <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
-                    장소 검색하기
-                  </button>
-                  <button className="btn" onClick={() => navigate('/import/' + course.id)}>
-                    불러오기
-                  </button>
-                </div>
+                <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
+                  장소 검색하기
+                </button>
               }
             />
           ) : (
-            <>
-              {course.places.map((cp, i) => {
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                height: '100%',
+                overflowX: 'auto',
+                padding: '0 20px 4px',
+                alignItems: 'stretch',
+              }}
+            >
+              {course.places.map((cp) => {
                 const place = PLACE_MAP[cp.placeId]
-                const next = course.places[i + 1]
-                const nextPlace = next ? PLACE_MAP[next.placeId] : null
                 return (
-                  <div key={cp.uid}>
-                    <div className="card tap" style={{ padding: 12 }} onClick={() => setEditing(cp.uid)}>
-                      <div className="list-item">
-                        <div className="body">
-                          <div className="name truncate">{place?.name}</div>
-                          <div className="meta truncate">
-                            {place?.category} · 좋아요 {place?.likeCount ?? 0}
-                          </div>
-                        </div>
-                        <Thumb />
-                      </div>
+                  <div
+                    key={cp.uid}
+                    className="card tap"
+                    style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
+                    onClick={() => setEditing(cp.uid)}
+                  >
+                    <Thumb />
+                    <div className="name truncate" style={{ marginTop: 8 }}>
+                      {place?.name}
                     </div>
-                    {nextPlace && place && (
-                      <div className="leg-distance">{haversineKm(place, nextPlace).toFixed(1)}km</div>
-                    )}
+                    <div className="meta truncate">
+                      {place?.category} · 좋아요 {place?.likeCount ?? 0}
+                    </div>
                   </div>
                 )
               })}
-
-              <button
-                className="btn ghost block"
-                style={{ marginTop: 16 }}
-                onClick={() => navigate('/import/' + course.id)}
-              >
-                불러오기
-              </button>
-              <div className="row" style={{ marginTop: 10 }}>
-                <button className="btn" onClick={() => navigate('/order/' + course.id)}>
-                  순서 정하기
-                </button>
-                <button className="btn" onClick={() => navigate('/summary/' + course.id)}>
-                  동선 요약
-                </button>
-              </div>
-              <button className="btn primary block" style={{ marginTop: 10 }} onClick={() => navigate('/save/' + course.id)}>
-                코스 저장
-              </button>
-              <div className="tiny muted" style={{ textAlign: 'center', marginTop: 10 }}>
-                순서 정하기에서 방문 순서와 동선을 정할 수 있어요
-              </div>
-            </>
+            </div>
           )}
-        </BottomSheet>
+        </div>
+
+        <div style={{ padding: '10px 20px calc(72px + var(--safe-b))' }}>
+          <button
+            className="btn primary block"
+            disabled={course.places.length < 2}
+            onClick={() => navigate('/order/' + course.id)}
+          >
+            순서 정하기
+          </button>
+        </div>
       </div>
 
       <PlaceEditorModal
@@ -169,46 +151,6 @@ export default function HomeScreen({ onSheetExpand }: { onSheetExpand?: (expande
           setEditing(null)
         }}
       />
-
-      <Modal open={pickerOpen} onClose={() => setPickerOpen(false)}>
-        <div className="between" style={{ marginBottom: 12 }}>
-          <div className="modal-title" style={{ marginBottom: 0 }}>
-            내 코스
-          </div>
-          <button
-            className="btn xs primary"
-            onClick={() => {
-              const id = store.startNewCourse()
-              setPickerOpen(false)
-              navigate('/edit/' + id)
-            }}
-          >
-            새 코스
-          </button>
-        </div>
-        <div className="stack">
-          {store.myCourses.map((c) => (
-            <div
-              key={c.id}
-              className={`card tap${c.id === course.id ? ' selected' : ''}`}
-              onClick={() => {
-                store.setDraftId(c.id)
-                setPickerOpen(false)
-              }}
-            >
-              <div className="between">
-                <div className="bold truncate">{c.saved && c.title ? c.title : '이름 없는 코스'}</div>
-                <span className={`pill${c.visibility === 'public' ? ' dark' : ''}`}>
-                  {c.visibility === 'public' ? '공개' : '비공개'}
-                </span>
-              </div>
-              <div className="tiny muted">
-                {c.places.length}곳
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
     </div>
   )
 }

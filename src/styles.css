@@ -58,14 +58,13 @@
   /* 색 — 키컬러: 어두운 하늘색. 나머지는 여기서 파생한 보조 팔레트 */
   --canvas: #ffffff;
   --ink: #123350;
+  --key: #8bc34a;
+  --key-ink: #1c2e10;
   --fg: #33424e;
   --muted: #758392;
   --surface: #eaf1f6;
   --border: #cfe0ea;
   --on-dark: #ffffff;
-  /* 보조 하늘색 — 선택 상태, 강조 등에 사용 */
-  --accent: #3f7ea6;
-  --accent-soft: #e3eff6;
   /* 보완 색 — 확인/경고 배너 */
   --ok: #2f7d5b;
   --ok-soft: #e6f3ec;
@@ -85,7 +84,7 @@
 
   /* 라운드 12 / 16 / 18 / 24 / 30 / full */
   --r-btn: 12px;
-  --r-card: 16px;
+  --r-card: 10px;
   --r-search: 18px;
   --r-sheet: 24px;
   --r-filter: 30px;
@@ -194,7 +193,7 @@ input, textarea { -webkit-appearance: none; }
   transition: opacity .15s ease;
 }
 .btn:active { opacity: .7; }
-.btn.primary { background: var(--ink); color: var(--on-dark); border-color: var(--ink); }
+.btn.primary { background: var(--key); color: var(--key-ink); border-color: var(--key); }
 .btn.ghost { background: var(--canvas); border-color: var(--border); color: var(--fg); }
 .btn.block { width: 100%; }
 .btn.sm { height: 36px; padding: 0 var(--sp-lg); font-size: 13px; }
@@ -209,7 +208,7 @@ input, textarea { -webkit-appearance: none; }
   border-color: transparent;
   color: var(--ink);
 }
-.btn.xs.primary { background: var(--ink); color: var(--on-dark); }
+.btn.xs.primary { background: var(--key); color: var(--key-ink); }
 .btn.outline { background: var(--canvas); border-color: var(--ink); color: var(--ink); }
 .btn:disabled { opacity: .35; }
 
@@ -229,7 +228,7 @@ input, textarea { -webkit-appearance: none; }
   color: var(--ink);
   white-space: nowrap;
 }
-.chip.on { background: var(--ink); color: var(--on-dark); }
+.chip.on { background: var(--key); color: var(--key-ink); }
 .chip.sm { height: 30px; padding: 0 12px; font-size: 12px; }
 .chip.outline { background: var(--canvas); border-color: var(--border); font-weight: 500; color: var(--fg); }
 
@@ -258,7 +257,7 @@ input, textarea { -webkit-appearance: none; }
   color: var(--ink);
   outline: none;
 }
-.input:focus, .textarea:focus, .select:focus { border-color: var(--ink); }
+.input:focus, .textarea:focus, .select:focus { border-color: var(--key); }
 .input::placeholder, .textarea::placeholder { color: var(--muted); }
 .textarea { min-height: 96px; resize: vertical; line-height: 24.92px; }
 .row { display: flex; gap: var(--sp-md); }
@@ -329,7 +328,7 @@ input, textarea { -webkit-appearance: none; }
   padding: var(--sp-lg);
 }
 .card + .card { margin-top: var(--sp-md); }
-.card.selected { border-color: var(--accent); }
+.card.selected { border-color: var(--key); }
 .card.tap:active { background: var(--map-base); }
 .card.flat { border-color: transparent; background: var(--map-base); }
 
@@ -348,8 +347,8 @@ input, textarea { -webkit-appearance: none; }
   width: 24px;
   height: 24px;
   border-radius: var(--r-full);
-  background: var(--ink);
-  color: var(--on-dark);
+  background: var(--key);
+  color: var(--key-ink);
   font-size: 12px;
   font-weight: 700;
   display: grid;
@@ -378,22 +377,6 @@ input, textarea { -webkit-appearance: none; }
 .small { font-size: 13px; line-height: 20px; }
 .bold { font-weight: 700; color: var(--ink); }
 .readable { font-size: 14px; line-height: 24.92px; }
-
-/* ── 바텀시트 */
-.sheet {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  z-index: 6;
-  background: var(--canvas);
-  border-top: 1px solid var(--border);
-  border-radius: var(--r-sheet) var(--r-sheet) 0 0;
-  display: flex;
-  flex-direction: column;
-  max-height: 88%;
-  transition: height .26s cubic-bezier(.32, .72, 0, 1);
-}
-.sheet .grab { width: 40px; height: 4px; border-radius: var(--r-full); background: var(--border); margin: 10px auto 2px; flex: none; }
-.sheet .sheet-body { overflow-y: auto; padding: var(--sp-md) var(--sp-xl) calc(96px + var(--safe-b)); }
 
 /* ── 모달 */
 .modal-backdrop {
@@ -460,7 +443,7 @@ input, textarea { -webkit-appearance: none; }
   font-weight: 400;
   color: var(--muted);
 }
-.tabbar button.on { color: var(--on-dark); font-weight: 700; background: var(--ink); }
+.tabbar button.on { color: var(--key-ink); font-weight: 700; background: var(--key); }
 
 /* ── 안내 배너 */
 .banner {
@@ -492,7 +475,7 @@ input, textarea { -webkit-appearance: none; }
 }
 .sortable-item { transition: transform .18s cubic-bezier(.2, .7, .3, 1); background: var(--canvas); border-radius: var(--r-card); }
 .sortable-item.lifted { z-index: 2; position: relative; }
-.sortable-item.lifted .card { border-color: var(--accent); }
+.sortable-item.lifted .card { border-color: var(--key); }
 
 /* ── 구간 */
 .leg {
@@ -506,17 +489,6 @@ input, textarea { -webkit-appearance: none; }
   line-height: 18px;
   color: var(--muted);
   min-height: 26px;
-}
-.leg-distance {
-  display: flex;
-  align-items: center;
-  margin: var(--sp-sm) 0 var(--sp-sm) 12px;
-  padding-left: var(--sp-lg);
-  border-left: 1px solid var(--border);
-  font-size: 12px;
-  line-height: 18px;
-  color: var(--muted);
-  min-height: 20px;
 }
 .leg .seg-btn {
   display: inline-flex;
@@ -556,7 +528,7 @@ input, textarea { -webkit-appearance: none; }
 
 /* ── 컨트롤 */
 .switch { width: 46px; height: 28px; border-radius: var(--r-full); background: var(--border); position: relative; flex: none; transition: background .18s; }
-.switch.on { background: var(--ink); }
+.switch.on { background: var(--key); }
 .switch::after {
   content: '';
   position: absolute;
@@ -576,7 +548,7 @@ input, textarea { -webkit-appearance: none; }
   flex: none;
   position: relative;
 }
-.checkbox.on { background: var(--ink); border-color: var(--ink); }
+.checkbox.on { background: var(--key); border-color: var(--key); }
 .checkbox.on::after {
   content: '';
   position: absolute;
@@ -597,7 +569,7 @@ input, textarea { -webkit-appearance: none; }
   color: var(--fg);
   white-space: nowrap;
 }
-.pill.dark { background: var(--ink); color: var(--on-dark); font-weight: 700; }
+.pill.dark { background: var(--key); color: var(--key-ink); font-weight: 700; }
 .pill.outline { background: var(--canvas); border: 1px solid var(--border); }
 
 .tabs { display: flex; border-bottom: 1px solid var(--border); }
@@ -610,7 +582,7 @@ input, textarea { -webkit-appearance: none; }
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
 }
-.tabs button.on { color: var(--ink); font-weight: 700; border-color: var(--ink); }
+.tabs button.on { color: var(--key-ink); font-weight: 700; border-color: var(--key); }
 
 .stack > * + * { margin-top: var(--sp-md); }
 .flexrow { display: flex; align-items: center; gap: var(--sp-md); }

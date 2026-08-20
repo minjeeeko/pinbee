@@ -89,14 +89,9 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
           />
         )}
 
-        <div className="row" style={{ marginTop: 12 }}>
-          <button className="btn ghost" onClick={() => navigate('/search/' + course.id)}>
-            장소 추가
-          </button>
-          <button className="btn ghost" onClick={() => navigate('/import/' + course.id)}>
-            불러오기
-          </button>
-        </div>
+        <button className="btn ghost block" style={{ marginTop: 12 }} onClick={() => navigate('/search/' + course.id)}>
+          장소 추가
+        </button>
 
         <button
           className="btn primary block"
