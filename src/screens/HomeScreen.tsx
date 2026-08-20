@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
@@ -11,6 +11,12 @@ export default function HomeScreen() {
   const store = useStore()
   const course = store.draft
   const [editing, setEditing] = useState<string | null>(null)
+  const rowRef = useRef<HTMLDivElement>(null)
+  const CARD_STEP = 162
+
+  const scrollCards = (dir: 1 | -1) => {
+    rowRef.current?.scrollBy({ left: dir * CARD_STEP, behavior: 'smooth' })
+  }
 
   const stats = useMemo(() => (course ? courseStats(course) : null), [course])
 
@@ -43,8 +49,8 @@ export default function HomeScreen() {
 
   return (
     <div className="screen">
-      {/* 상단 2/3 — 지도 */}
-      <div style={{ position: 'relative', flex: 2, minHeight: 0 }}>
+      {/* 지도 — 남는 공간을 모두 채운다 */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <MapCanvas
           places={places}
           showRoute={false}
@@ -62,11 +68,10 @@ export default function HomeScreen() {
         </div>
       </div>
 
-      {/* 하단 1/3 — 장소 카드 */}
+      {/* 하단 장소 카드 — 내용에 맞춘 고정 높이 패널 */}
       <div
         style={{
-          flex: 1,
-          minHeight: 0,
+          flex: 'none',
           display: 'flex',
           flexDirection: 'column',
           borderTop: '1px solid var(--border)',
@@ -83,48 +88,58 @@ export default function HomeScreen() {
         </div>
 
         {course.places.length === 0 ? (
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-            <Empty
-              title="아직 추가한 장소가 없어요"
-              desc="검색해서 코스를 시작하세요."
-              action={
-                <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
-                  장소 검색하기
-                </button>
-              }
-            />
-          </div>
+          <Empty
+            title="아직 추가한 장소가 없어요"
+            desc="검색해서 코스를 시작하세요."
+            action={
+              <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
+                장소 검색하기
+              </button>
+            }
+          />
         ) : (
-          <div
-            style={{
-              flex: 1,
-              minHeight: 0,
-              display: 'flex',
-              gap: 10,
-              overflowX: 'auto',
-              padding: '0 20px 4px',
-            }}
-          >
-            {course.places.map((cp) => {
-              const place = PLACE_MAP[cp.placeId]
-              return (
-                <div
-                  key={cp.uid}
-                  className="card tap"
-                  style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
-                  onClick={() => setEditing(cp.uid)}
-                >
-                  <Thumb />
-                  <div className="name truncate" style={{ marginTop: 8 }}>
-                    {place?.name}
+          <>
+            <div
+              ref={rowRef}
+              className="no-scrollbar"
+              style={{
+                height: 140,
+                display: 'flex',
+                gap: 10,
+                overflowX: 'auto',
+                padding: '0 20px 4px',
+              }}
+            >
+              {course.places.map((cp) => {
+                const place = PLACE_MAP[cp.placeId]
+                return (
+                  <div
+                    key={cp.uid}
+                    className="card tap"
+                    style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
+                    onClick={() => setEditing(cp.uid)}
+                  >
+                    <Thumb />
+                    <div className="name truncate" style={{ marginTop: 8 }}>
+                      {place?.name}
+                    </div>
+                    <div className="meta truncate">
+                      {place?.category} · 좋아요 {place?.likeCount ?? 0}
+                    </div>
                   </div>
-                  <div className="meta truncate">
-                    {place?.category} · 좋아요 {place?.likeCount ?? 0}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '6px 0 2px' }}>
+              <button className="scroll-nav" onClick={() => scrollCards(-1)} aria-label="이전 카드">
+                ‹
+              </button>
+              <button className="scroll-nav" onClick={() => scrollCards(1)} aria-label="다음 카드">
+                ›
+              </button>
+            </div>
+          </>
         )}
 
         <div style={{ padding: '10px 20px calc(14px + var(--safe-b))' }}>
@@ -133,7 +148,7 @@ export default function HomeScreen() {
             disabled={course.places.length < 2}
             onClick={() => navigate('/order/' + course.id)}
           >
-            순서 정하기
+            코스 만들기
           </button>
         </div>
       </div>
