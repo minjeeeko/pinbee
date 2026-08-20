@@ -12,7 +12,16 @@ export default function SavedPlacesScreen() {
   const store = useStore()
   const [cat, setCat] = useState<Category | '전체'>('전체')
   const [dupTarget, setDupTarget] = useState<string | null>(null)
+  const [editingMemo, setEditingMemo] = useState<Set<string>>(new Set())
   const course = store.draft
+
+  const toggleMemoEdit = (placeId: string) =>
+    setEditingMemo((s) => {
+      const next = new Set(s)
+      if (next.has(placeId)) next.delete(placeId)
+      else next.add(placeId)
+      return next
+    })
 
   const allSaved = useMemo(
     () =>
@@ -110,13 +119,49 @@ export default function SavedPlacesScreen() {
                   </button>
                 </div>
               </div>
-              <textarea
-                className="textarea"
-                style={{ minHeight: 44, marginTop: 10 }}
-                placeholder="메모를 남겨보세요"
-                value={memo}
-                onChange={(e) => store.setSavedPlaceMemo(p.id, e.target.value)}
-              />
+              {editingMemo.has(p.id) ? (
+                <div style={{ marginTop: 10 }}>
+                  <textarea
+                    className="textarea"
+                    style={{ minHeight: 44 }}
+                    placeholder="메모를 남겨보세요"
+                    autoFocus
+                    value={memo}
+                    onChange={(e) => store.setSavedPlaceMemo(p.id, e.target.value)}
+                  />
+                  <button
+                    className="btn xs"
+                    style={{ marginTop: 6 }}
+                    onClick={() => toggleMemoEdit(p.id)}
+                  >
+                    완료
+                  </button>
+                </div>
+              ) : memo ? (
+                <button
+                  className="tap"
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    textAlign: 'left',
+                    background: 'var(--surface)',
+                    border: 'none',
+                    borderRadius: 'var(--r-card)',
+                    padding: '8px 10px',
+                  }}
+                  onClick={() => toggleMemoEdit(p.id)}
+                >
+                  <div className="small truncate">{memo}</div>
+                </button>
+              ) : (
+                <button
+                  className="tap muted small"
+                  style={{ marginTop: 10, background: 'none', border: 'none', padding: 0 }}
+                  onClick={() => toggleMemoEdit(p.id)}
+                >
+                  메모 추가
+                </button>
+              )}
             </div>
           ))
         )}
