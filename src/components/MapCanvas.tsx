@@ -16,8 +16,6 @@ interface Props {
   /** 시트·카드에 가려지는 영역 (px) */
   insetTop?: number
   insetBottom?: number
-  /** 지도 컨트롤의 상단 여백 (검색바 등과 겹치지 않도록) */
-  toolsTop?: number
 }
 
 function mulberry(seed: number) {
@@ -70,7 +68,6 @@ export default function MapCanvas({
   seed = 7,
   insetTop = 0,
   insetBottom = 0,
-  toolsTop = 16,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -132,7 +129,7 @@ export default function MapCanvas({
   const legLabel = (i: number) => {
     const l = legs?.[i]
     if (!l) return null
-    return l.minutes === null ? '계산 불가' : `${l.minutes}분`
+    return l.minutes === null ? '계산 불가' : `${l.distanceKm.toFixed(1)}km`
   }
 
   return (
@@ -221,7 +218,7 @@ export default function MapCanvas({
         </g>
       </svg>
 
-      <div className="map-tools" style={{ top: toolsTop }}>
+      <div className="map-tools" style={{ bottom: insetBottom + 16 }}>
         <button className="map-tool icon" onClick={() => zoom(1.3)} aria-label="확대">
           +
         </button>
@@ -229,7 +226,7 @@ export default function MapCanvas({
           -
         </button>
         <button className="map-tool icon" onClick={() => setView({ x: 0, y: 0, k: 1 })} aria-label="전체 보기">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
             <ellipse cx="8" cy="8" rx="2.6" ry="6.5" stroke="currentColor" strokeWidth="1.3" />
             <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" strokeWidth="1.3" />

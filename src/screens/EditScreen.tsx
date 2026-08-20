@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration } from '../lib/schedule'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import SortableList from '../components/SortableList'
@@ -48,11 +47,8 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
       </div>
 
       <div className="scroll pad" style={{ marginTop: 12 }}>
-        <div className="between" style={{ marginBottom: 10 }}>
-          <span className="tiny muted">코스에 담긴 장소</span>
-          <button className="btn xs" onClick={() => navigate('/timeline/' + course.id)}>
-            {course.date.slice(5).replace('-', '/')} · {course.startTime} 출발
-          </button>
+        <div className="tiny muted" style={{ marginBottom: 10 }}>
+          코스에 담긴 장소
         </div>
 
         {course.places.length === 0 ? (
@@ -81,7 +77,6 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
                         {place?.address.replace('서울 ', '')} · {place?.category}
                       </div>
                       <div className="flexrow" style={{ marginTop: 6, gap: 6 }}>
-                        <span className="pill">체류 {fmtDuration(cp.stayMinutes)}</span>
                         <span className="pill">{cp.memo ? '메모 있음' : '메모 없음'}</span>
                       </div>
                     </div>

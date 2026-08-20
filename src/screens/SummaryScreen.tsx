@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration, fmtTime } from '../lib/schedule'
 import { TRANSPORT_LABEL } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
@@ -25,13 +24,11 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
     )
   }
 
+  const totalKm = stats.legs.reduce((sum, l) => sum + l.distanceKm, 0)
+
   return (
     <div className="screen">
-      <AppBar
-        title={course.title || '이름 없는 코스'}
-        sub={`${course.date} · ${course.startTime} 출발`}
-        onBack={goBack}
-      />
+      <AppBar title={course.title || '이름 없는 코스'} onBack={goBack} />
 
       <div className="chips" style={{ padding: '0 14px 10px' }}>
         {stats.places.map((p, i) => (
@@ -80,14 +77,8 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
           <div className="card">
             <div className="between" onClick={() => setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
               <div>
-                <div className="bold">
-                  동선 총 {course.places.length}곳 · 이동 {fmtDuration(stats.travel)}
-                </div>
-                <div className="tiny muted">
-                  {stats.endMinutes !== null
-                    ? `${course.startTime} 출발 · ${fmtTime(stats.endMinutes)} 종료 예정`
-                    : '일부 구간을 계산할 수 없어 종료 시각을 알 수 없어요'}
-                </div>
+                <div className="bold">동선 총 {course.places.length}곳</div>
+                <div className="tiny muted">총 이동 거리 {totalKm.toFixed(1)}km</div>
               </div>
               <span className="textbtn">{expanded ? '접기' : '자세히'}</span>
             </div>
@@ -104,15 +95,10 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                         </span>
                         <span className="tiny muted">{leg.distanceKm.toFixed(1)}km</span>
                       </div>
-                      <div className="between">
-                        <TransportPicker
-                          value={leg.transport}
-                          onChange={(t) => store.setLegTransport(course.id, i, t)}
-                        />
-                        <span className="small bold">
-                          {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
-                        </span>
-                      </div>
+                      <TransportPicker
+                        value={leg.transport}
+                        onChange={(t) => store.setLegTransport(course.id, i, t)}
+                      />
                       {leg.minutes === null && (
                         <div className="banner alert" style={{ marginTop: 8 }}>
                           {leg.error}
@@ -128,9 +114,6 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                 <div className="flexrow" style={{ flexWrap: 'wrap', gap: 6 }}>
                   <button className="chip sm" onClick={() => navigate('/order/' + course.id)}>
                     순서 편집
-                  </button>
-                  <button className="chip sm" onClick={() => navigate('/timeline/' + course.id)}>
-                    시간 보기
                   </button>
                   <button className="chip sm" onClick={() => navigate('/prefs/' + course.id)}>
                     조건 점검

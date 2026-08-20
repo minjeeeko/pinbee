@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration, fmtTime } from '../lib/schedule'
 import { TRANSPORT_LABEL } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
@@ -84,8 +83,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         </div>
         <div className="tiny muted" style={{ marginTop: 4 }}>
           작성자 {course.authorName} · {stats.regions.join('·')} · {course.theme} ·{' '}
-          {stats.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'} · {course.places.length}곳 · 약{' '}
-          {fmtDuration(stats.total)}
+          {stats.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'} · {course.places.length}곳
         </div>
         {course.description && (
           <div className="small" style={{ marginTop: 10, color: 'var(--fg)' }}>
@@ -96,7 +94,6 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         <div className="section-title">방문 순서</div>
         {course.places.map((cp, i) => {
           const place = PLACE_MAP[cp.placeId]
-          const item = stats.schedule[i]
           const leg = stats.legs[i]
           return (
             <div key={cp.uid}>
@@ -104,12 +101,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
                 <div className="list-item">
                   <span className="num">{i + 1}</span>
                   <div className="body">
-                    <div className="between">
-                      <span className="name truncate">{place?.name}</span>
-                      <span className="tiny bold">
-                        {fmtTime(item?.arrive ?? null)} - {fmtTime(item?.leave ?? null)}
-                      </span>
-                    </div>
+                    <div className="name truncate">{place?.name}</div>
                     <div className="meta truncate">
                       {place?.region} · {place?.category}
                       {cp.memo ? ` · ${cp.memo}` : ''}
@@ -121,8 +113,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
               {leg && (
                 <div className={`leg${leg.minutes === null ? ' error' : ''}`}>
                   <span className="seg-btn">
-                    {TRANSPORT_LABEL[leg.transport]}{' '}
-                    {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
+                    {TRANSPORT_LABEL[leg.transport]} · {leg.distanceKm.toFixed(1)}km
                   </span>
                 </div>
               )}

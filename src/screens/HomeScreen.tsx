@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration } from '../lib/schedule'
 import { haversineKm } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
@@ -10,7 +9,7 @@ import BottomSheet from '../components/BottomSheet'
 import { Empty, Modal, Thumb } from '../components/ui'
 import { PlaceEditorModal } from '../components/common'
 
-export default function HomeScreen() {
+export default function HomeScreen({ onSheetExpand }: { onSheetExpand?: (expanded: boolean) => void }) {
   const store = useStore()
   const course = store.draft
   const [editing, setEditing] = useState<string | null>(null)
@@ -57,7 +56,6 @@ export default function HomeScreen() {
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
           seed={11}
           insetTop={70}
-          toolsTop={72}
           insetBottom={Math.round(window.innerHeight * sheetFraction)}
         />
 
@@ -69,7 +67,10 @@ export default function HomeScreen() {
 
         <BottomSheet
           snaps={[0.44, 0.86]}
-          onSnapChange={setSheetFraction}
+          onSnapChange={(f) => {
+            setSheetFraction(f)
+            onSheetExpand?.(f > 0.5)
+          }}
           header={
             <div style={{ padding: '2px 16px 8px' }}>
               <div className="between">
@@ -202,7 +203,7 @@ export default function HomeScreen() {
                 </span>
               </div>
               <div className="tiny muted">
-                {c.places.length}곳 · {fmtDuration(courseStats(c).total)}
+                {c.places.length}곳
               </div>
             </div>
           ))}

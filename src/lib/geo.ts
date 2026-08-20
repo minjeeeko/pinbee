@@ -66,6 +66,10 @@ export function totalTravelMinutes(legs: Leg[]) {
   return legs.reduce((sum, l) => sum + (l.minutes ?? 0), 0)
 }
 
+export function totalDistanceKm(legs: Leg[]) {
+  return legs.reduce((sum, l) => sum + l.distanceKm, 0)
+}
+
 /** 이동수단 자동 추천: 거리 기반 */
 export function suggestTransport(distanceKm: number): Transport {
   if (distanceKm <= 1.2) return 'walk'

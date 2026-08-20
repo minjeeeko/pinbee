@@ -2,9 +2,8 @@ import { useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration } from '../lib/schedule'
 import { suggestOrder } from '../lib/schedule'
-import { computeLegs, totalTravelMinutes } from '../lib/geo'
+import { computeLegs, totalDistanceKm } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import SortableList from '../components/SortableList'
@@ -22,8 +21,8 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
   const suggestion = useMemo(() => {
     if (!course) return null
     const next = suggestOrder(course.places, store.prefs.transport)
-    const before = totalTravelMinutes(computeLegs(course.places))
-    const after = totalTravelMinutes(computeLegs(next))
+    const before = totalDistanceKm(computeLegs(course.places))
+    const after = totalDistanceKm(computeLegs(next))
     const unchanged = next.every(
       (p, i) => p.uid === course.places[i].uid && p.transportToNext === course.places[i].transportToNext,
     )
@@ -56,9 +55,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
 
       <div className="scroll pad" style={{ marginTop: 12 }}>
         <div className="between" style={{ marginBottom: 10 }}>
-          <span className="tiny muted">
-            이동 {fmtDuration(stats.travel)} · 체류 {fmtDuration(stats.stay)}
-          </span>
+          <span className="tiny muted">총 이동 거리 {stats.legs.reduce((sum, l) => sum + l.distanceKm, 0).toFixed(1)}km</span>
           <button className="btn xs" onClick={() => setSuggestOpen(true)}>
             순서 제안 받기
           </button>
@@ -86,7 +83,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                     <div className="body">
                       <div className="name truncate">{place?.name}</div>
                       <div className="meta truncate">
-                        {place?.region} · {place?.category} · 체류 {fmtDuration(cp.stayMinutes)}
+                        {place?.region} · {place?.category}
                       </div>
                     </div>
                     <Thumb />
@@ -123,17 +120,17 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
       </div>
 
       <Modal open={suggestOpen} onClose={() => setSuggestOpen(false)}>
-        <div className="modal-title">이동시간이 짧아지는 순서 제안</div>
+        <div className="modal-title">이동 거리가 짧아지는 순서 제안</div>
         {!suggestion || suggestion.same ? (
           <div className="banner" style={{ marginBottom: 14 }}>
-            지금보다 이동시간이 짧아지는 대안을 찾지 못했어요. 기존 순서를 유지할게요.
+            지금보다 거리가 짧아지는 대안을 찾지 못했어요. 기존 순서를 유지할게요.
           </div>
         ) : (
           <>
             <div className="banner" style={{ marginBottom: 12 }}>
-              이동 {fmtDuration(suggestion.before)} → <b>{fmtDuration(suggestion.after)}</b>
+              총 거리 {suggestion.before.toFixed(1)}km → <b>{suggestion.after.toFixed(1)}km</b>
               {suggestion.after < suggestion.before
-                ? ` (${fmtDuration(suggestion.before - suggestion.after)} 단축)`
+                ? ` (${(suggestion.before - suggestion.after).toFixed(1)}km 단축)`
                 : ' (단축 효과 없음)'}
             </div>
             <div className="stack" style={{ marginBottom: 14 }}>

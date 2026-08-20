@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
 import { PLACE_MAP, CATEGORIES } from '../data/places'
+import MapCanvas from '../components/MapCanvas'
 import { Empty, Modal, Thumb } from '../components/ui'
 import { josa } from '../lib/text'
 import type { Category } from '../lib/types'
@@ -13,10 +14,11 @@ export default function SavedPlacesScreen() {
   const [dupTarget, setDupTarget] = useState<string | null>(null)
   const course = store.draft
 
-  const places = store.savedPlaceIds
-    .map((id) => PLACE_MAP[id])
-    .filter(Boolean)
-    .filter((p) => (cat === '전체' ? true : p.category === cat))
+  const allSaved = useMemo(
+    () => store.savedPlaceIds.map((id) => PLACE_MAP[id]).filter(Boolean),
+    [store.savedPlaceIds],
+  )
+  const places = allSaved.filter((p) => (cat === '전체' ? true : p.category === cat))
 
   const add = (placeId: string) => {
     if (!course) {
@@ -44,7 +46,23 @@ export default function SavedPlacesScreen() {
         </button>
       </div>
 
-      <div className="chips" style={{ padding: '0 14px 8px' }}>
+      <div
+        style={{
+          position: 'relative',
+          height: 190,
+          margin: '0 20px',
+          borderRadius: 16,
+          overflow: 'hidden',
+          border: '1px solid var(--border)',
+        }}
+      >
+        <MapCanvas places={places} showRoute={false} showNumbers={false} seed={17} />
+        <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
+          <span className="chip sm outline">{places.length}곳 표시 중</span>
+        </div>
+      </div>
+
+      <div className="chips" style={{ padding: '14px 20px 8px' }}>
         {(['전체', ...CATEGORIES] as const).map((c) => (
           <button key={c} className={`chip sm${cat === c ? ' on' : ''}`} onClick={() => setCat(c)}>
             {c}
@@ -71,7 +89,7 @@ export default function SavedPlacesScreen() {
                 <div className="body">
                   <div className="name truncate">{p.name}</div>
                   <div className="meta truncate">
-                    {p.address.replace('서울 ', '')} · {p.category}
+                    {p.category} · 좋아요 {p.likeCount}
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

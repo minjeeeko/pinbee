@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import type { Course, CoursePlace, Leg, Place, Transport } from '../lib/types'
 import { TRANSPORT_LABEL } from '../lib/geo'
-import { fmtDuration, fmtTime } from '../lib/schedule'
+
 import { courseStats } from '../lib/course'
 import { PLACE_MAP } from '../data/places'
-import { Modal, Stepper, Thumb } from './ui'
+import { Modal, Thumb } from './ui'
 
 export function PlaceRow({
   place,
@@ -74,14 +74,10 @@ export function LegRow({
       <div className={`leg${leg.minutes === null ? ' error' : ''}`}>
         {editable ? (
           <button className="seg-btn" onClick={() => setOpen((v) => !v)}>
-            {TRANSPORT_LABEL[leg.transport]}
-            {leg.minutes !== null ? ` ${leg.minutes}분` : ' 계산 불가'} · 변경
+            {TRANSPORT_LABEL[leg.transport]} · 변경
           </button>
         ) : (
-          <span className="seg-btn">
-            {TRANSPORT_LABEL[leg.transport]}
-            {leg.minutes !== null ? ` ${leg.minutes}분` : ' 계산 불가'}
-          </span>
+          <span className="seg-btn">{TRANSPORT_LABEL[leg.transport]}</span>
         )}
         <span className="tiny">{leg.distanceKm.toFixed(1)}km</span>
       </div>
@@ -135,25 +131,6 @@ export function PlaceEditorModal({
         <Thumb size="lg" />
       </div>
 
-      {place?.hours ? (
-        <div className="banner" style={{ marginBottom: 16 }}>
-          영업시간 {fmtTime(place.hours.open)} - {fmtTime(place.hours.close)}
-        </div>
-      ) : (
-        <div className="banner alert" style={{ marginBottom: 16 }}>
-          영업시간 정보가 없어 방문 가능 여부를 확인할 수 없어요.
-        </div>
-      )}
-
-      <div className="between" style={{ marginBottom: 16 }}>
-        <span className="bold small">예상 체류시간</span>
-        <Stepper
-          value={coursePlace.stayMinutes}
-          onChange={(v) => onChange({ stayMinutes: v })}
-          format={(v) => fmtDuration(v)}
-        />
-      </div>
-
       <label className="field">
         <span className="label">메모</span>
         <textarea
@@ -193,23 +170,10 @@ export function CourseCard({ course, onClick }: { course: Course; onClick: () =>
             {course.authorName} · {s.regions.slice(0, 2).join('·') || '장소 없음'} · {course.theme}
           </div>
           <div className="tiny muted" style={{ marginTop: 4 }}>
-            {course.places.length}곳 · 약 {fmtDuration(s.total)} · {s.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '-'}
+            {course.places.length}곳 · {s.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'}
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-export function ConflictBadge({ conflict }: { conflict: string }) {
-  const map: Record<string, [string, boolean]> = {
-    'before-open': ['오픈 전 도착', true],
-    'after-close': ['마감 후 종료', true],
-    unknown: ['영업시간 미확인', false],
-    uncomputable: ['시각 계산 불가', false],
-  }
-  const entry = map[conflict]
-  if (!entry) return null
-  const [text, strong] = entry
-  return <span className={`pill${strong ? ' dark' : ''}`}>{text}</span>
 }

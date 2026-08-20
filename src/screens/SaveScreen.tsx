@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { fmtDuration } from '../lib/schedule'
 import { THEMES } from '../data/seed'
 import { PLACE_MAP } from '../data/places'
 import { AppBar, Empty, Modal, Switch, Thumb } from '../components/ui'
@@ -66,11 +65,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       <AppBar
         title="코스 저장"
         onBack={goBack}
-        right={
-          <span className="pill">
-            {course.places.length}곳 · {fmtDuration(stats.total)}
-          </span>
-        }
+        right={<span className="pill">{course.places.length}곳</span>}
       />
 
       <div className="scroll pad">

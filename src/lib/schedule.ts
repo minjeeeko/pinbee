@@ -79,26 +79,13 @@ export interface PreferenceIssue {
 }
 
 /** 선호 조건과 현재 코스를 비교해 위반 항목을 찾는다 */
-export function findIssues(
-  course: Course,
-  legs: Leg[],
-  schedule: ScheduleItem[],
-  prefs: Preferences,
-): PreferenceIssue[] {
+export function findIssues(course: Course, legs: Leg[], prefs: Preferences): PreferenceIssue[] {
   const issues: PreferenceIssue[] = []
 
   legs.forEach((leg, i) => {
     if (leg.minutes === null) {
       issues.push({ kind: 'leg', index: i, text: leg.error ?? '경로를 계산할 수 없는 구간이에요.' })
       return
-    }
-    if (leg.minutes > prefs.maxLegMinutes) {
-      const to = PLACE_MAP[leg.toPlaceId]?.name ?? ''
-      issues.push({
-        kind: 'leg',
-        index: i,
-        text: `${i + 1}→${i + 2}구간(${to})이 ${leg.minutes}분으로 설정한 ${prefs.maxLegMinutes}분을 넘어요.`,
-      })
     }
     if (prefs.transport !== 'mixed' && leg.transport !== prefs.transport) {
       issues.push({
@@ -118,19 +105,6 @@ export function findIssues(
     })
   }
 
-  schedule.forEach((s, i) => {
-    if (s.conflict === 'before-open' || s.conflict === 'after-close') {
-      issues.push({ kind: 'place', index: i, text: `${PLACE_MAP[s.placeId]?.name}: ${s.conflictText}` })
-    }
-  })
-
-  const last = schedule[schedule.length - 1]
-  if (last?.leave != null) {
-    const span = last.leave - parseTime(course.startTime)
-    if (span > DAY_LIMIT) {
-      issues.push({ kind: 'day', index: -1, text: `전체 일정이 ${fmtDuration(span)}로 하루 범위를 넘어요.` })
-    }
-  }
   return issues
 }
 
