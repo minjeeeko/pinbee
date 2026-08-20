@@ -49,12 +49,36 @@ export function newCourse(authorId: string, authorName: string): Course {
   }
 }
 
+/** 이전 버전 localStorage(예: savedPlaceIds: string[])를 현재 스키마로 안전하게 보정한다 */
+function normalizePersisted(parsed: any): PersistState | null {
+  if (!parsed || !Array.isArray(parsed.courses)) return null
+
+  let savedPlaces: SavedPlace[]
+  if (Array.isArray(parsed.savedPlaces)) {
+    savedPlaces = parsed.savedPlaces
+  } else if (Array.isArray(parsed.savedPlaceIds)) {
+    // 이전 스키마: 장소 id만 담긴 배열
+    savedPlaces = parsed.savedPlaceIds.map((placeId: string) => ({ placeId, memo: '' }))
+  } else {
+    savedPlaces = []
+  }
+
+  return {
+    user: parsed.user ?? null,
+    courses: parsed.courses.map((c: Partial<Course>) => ({ ...c, saved: c.saved ?? false }) as Course),
+    savedPlaces,
+    reports: Array.isArray(parsed.reports) ? parsed.reports : [],
+    prefs: parsed.prefs ?? DEFAULT_PREFS,
+    draftId: parsed.draftId ?? null,
+  }
+}
+
 function initialState(): PersistState {
   const raw = localStorage.getItem(KEY)
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as PersistState
-      if (parsed && Array.isArray(parsed.courses)) return parsed
+      const normalized = normalizePersisted(JSON.parse(raw))
+      if (normalized) return normalized
     } catch {
       /* 손상된 저장 데이터는 초기값으로 대체 */
     }

@@ -82,20 +82,17 @@ export default function App() {
       <div className="phone">
         {render()}
         {isTab && (
-          <>
-            <div className="tab-fade" />
-            <nav className="tabbar">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  className={tabKey === t.key ? 'on' : ''}
-                  onClick={() => navigate('/' + t.key)}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </nav>
-          </>
+          <nav className="tabbar">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                className={tabKey === t.key ? 'on' : ''}
+                onClick={() => navigate('/' + t.key)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </nav>
         )}
         <Toasts />
       </div>

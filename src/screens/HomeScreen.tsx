@@ -82,8 +82,8 @@ export default function HomeScreen() {
           <div className="tiny muted">{course.places.length}곳</div>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
-          {course.places.length === 0 ? (
+        {course.places.length === 0 ? (
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
             <Empty
               title="아직 추가한 장소가 없어요"
               desc="검색해서 코스를 시작하세요."
@@ -93,41 +93,41 @@ export default function HomeScreen() {
                 </button>
               }
             />
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                gap: 10,
-                height: '100%',
-                overflowX: 'auto',
-                padding: '0 20px 4px',
-                alignItems: 'stretch',
-              }}
-            >
-              {course.places.map((cp) => {
-                const place = PLACE_MAP[cp.placeId]
-                return (
-                  <div
-                    key={cp.uid}
-                    className="card tap"
-                    style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
-                    onClick={() => setEditing(cp.uid)}
-                  >
-                    <Thumb />
-                    <div className="name truncate" style={{ marginTop: 8 }}>
-                      {place?.name}
-                    </div>
-                    <div className="meta truncate">
-                      {place?.category} · 좋아요 {place?.likeCount ?? 0}
-                    </div>
+          </div>
+        ) : (
+          <div
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              padding: '0 20px 4px',
+            }}
+          >
+            {course.places.map((cp) => {
+              const place = PLACE_MAP[cp.placeId]
+              return (
+                <div
+                  key={cp.uid}
+                  className="card tap"
+                  style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
+                  onClick={() => setEditing(cp.uid)}
+                >
+                  <Thumb />
+                  <div className="name truncate" style={{ marginTop: 8 }}>
+                    {place?.name}
                   </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
+                  <div className="meta truncate">
+                    {place?.category} · 좋아요 {place?.likeCount ?? 0}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
-        <div style={{ padding: '10px 20px calc(72px + var(--safe-b))' }}>
+        <div style={{ padding: '10px 20px calc(14px + var(--safe-b))' }}>
           <button
             className="btn primary block"
             disabled={course.places.length < 2}

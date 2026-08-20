@@ -19,14 +19,14 @@ interface Props {
 }
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
-/** 키컬러 — 지도 핀·동선. 옅은 배경이라 핀 번호는 어두운 색으로 대비를 준다 */
-const KEY = '#8bc34a'
-const KEY_INK = '#1c2e10'
-const TEXT_DARK = '#123350'
+/** 키컬러 — 지도 핀·동선 */
+const KEY = '#111111'
+const KEY_INK = '#ffffff'
+const TEXT_DARK = '#111111'
 
 function pinIcon(index: number, showNumbers: boolean, active: boolean) {
   const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
-  const ring = active ? `box-shadow:0 1px 4px rgba(28,46,16,.4),0 0 0 6px rgba(139,195,74,.35);` : `box-shadow:0 1px 4px rgba(28,46,16,.4);`
+  const ring = active ? `box-shadow:0 1px 4px rgba(17,17,17,.4),0 0 0 6px rgba(17,17,17,.22);` : `box-shadow:0 1px 4px rgba(17,17,17,.4);`
   const label = showNumbers
     ? `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 13 : 12}px;font-family:'Suit',sans-serif;`
     : ''

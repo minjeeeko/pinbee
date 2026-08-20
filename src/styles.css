@@ -55,25 +55,25 @@
 }
 
 :root {
-  /* 색 — 키컬러: 어두운 하늘색. 나머지는 여기서 파생한 보조 팔레트 */
+  /* 색 — 무채색 기본. 키컬러는 검정 */
   --canvas: #ffffff;
-  --ink: #123350;
-  --key: #8bc34a;
-  --key-ink: #1c2e10;
-  --fg: #33424e;
-  --muted: #758392;
-  --surface: #eaf1f6;
-  --border: #cfe0ea;
+  --ink: #111111;
+  --key: #111111;
+  --key-ink: #ffffff;
+  --fg: #333333;
+  --muted: #888888;
+  --surface: #eeeeee;
+  --border: #4d4d4d;
   --on-dark: #ffffff;
   /* 보완 색 — 확인/경고 배너 */
   --ok: #2f7d5b;
   --ok-soft: #e6f3ec;
   --warn: #b9791b;
   --warn-soft: #faf1de;
-  --map-base: #f4f8fa;
-  --map-block: #e1ecf2;
+  --map-base: #f6f6f6;
+  --map-block: #ededed;
   --map-road: #ffffff;
-  --map-water: #d9e9f1;
+  --map-water: #e7e7e7;
 
   /* 간격 4 / 6 / 8 / 16 / 20 */
   --sp-xs: 4px;
@@ -99,7 +99,7 @@ html, body, #root { height: 100%; }
 
 body {
   margin: 0;
-  background: #eef3f6;
+  background: #ffffff;
   color: var(--fg);
   font-family: 'Suit', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
   font-size: 14px;
@@ -143,7 +143,7 @@ input, textarea { -webkit-appearance: none; }
   background: var(--canvas);
 }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-.scroll.pad { padding: 0 var(--sp-xl) 100px; }
+.scroll.pad { padding: 0 var(--sp-xl) 40px; }
 
 /* ── 헤더 */
 .appbar {
@@ -403,47 +403,23 @@ input, textarea { -webkit-appearance: none; }
 @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
 @keyframes slideup { from { transform: translateY(12%) } to { transform: none } }
 
-/* ── 하단 탭 (플로팅, 반투명) */
-.tab-fade {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 130px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.75) 55%, rgba(255, 255, 255, 0.94) 100%);
-  z-index: 14;
-  pointer-events: none;
-  transition: opacity .28s ease;
-}
-.tab-fade.hidden { opacity: 0; }
-
+/* ── 하단 탭 (고정) */
 .tabbar {
-  position: absolute;
-  left: var(--sp-xl);
-  right: var(--sp-xl);
-  bottom: calc(var(--sp-xl) + var(--safe-b));
-  z-index: 15;
+  flex: none;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: var(--sp-xs);
-  padding: var(--sp-xs);
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(207, 224, 234, 0.9);
-  border-radius: var(--r-full);
-  transition: opacity .28s ease, transform .28s ease;
+  border-top: 1px solid var(--border);
+  background: var(--canvas);
+  padding-bottom: var(--safe-b);
 }
-.tabbar.hidden { opacity: 0; transform: translateY(14px); pointer-events: none; }
 .tabbar button {
-  padding: 10px 0;
-  border-radius: var(--r-full);
+  padding: 12px 0;
   font-size: 12px;
   line-height: 18px;
   font-weight: 400;
   color: var(--muted);
 }
-.tabbar button.on { color: var(--key-ink); font-weight: 700; background: var(--key); }
+.tabbar button.on { color: var(--key); font-weight: 700; }
 
 /* ── 안내 배너 */
 .banner {
