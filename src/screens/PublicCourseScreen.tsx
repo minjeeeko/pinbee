@@ -1,0 +1,172 @@
+import { useMemo, useState } from 'react'
+import { goBack, navigate } from '../lib/router'
+import { useStore } from '../lib/store'
+import { courseStats } from '../lib/course'
+import { fmtDuration, fmtTime } from '../lib/schedule'
+import { TRANSPORT_ICON, TRANSPORT_LABEL } from '../lib/geo'
+import { PLACE_MAP } from '../data/places'
+import MapCanvas from '../components/MapCanvas'
+import { AppBar, Empty, Modal, Thumb } from '../components/ui'
+
+const REASONS = ['부적절한 내용', '개인정보 노출', '허위·과장 정보', '광고·스팸', '기타']
+
+export default function PublicCourseScreen({ courseId, token }: { courseId?: string; token?: string }) {
+  const store = useStore()
+  const [reportOpen, setReportOpen] = useState(false)
+  const [reason, setReason] = useState(REASONS[0])
+  const course = token ? store.getCourseByToken(token) : courseId ? store.getCourse(courseId) : undefined
+  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+
+  const unavailable =
+    !course || course.hidden || (course.visibility !== 'public' && course.authorId !== (store.user?.id ?? 'u-me'))
+
+  if (unavailable || !course || !stats) {
+    return (
+      <div className="screen">
+        <AppBar title="코스 상세" onBack={goBack} />
+        <Empty
+          icon="🔒"
+          title="지금은 볼 수 없는 코스예요"
+          desc="비공개로 전환되었거나 관리자에 의해 숨김 처리된 코스입니다."
+          action={
+            <button className="btn primary" onClick={() => navigate('/explore')}>
+              공개 코스 둘러보기
+            </button>
+          }
+        />
+      </div>
+    )
+  }
+
+  const isMine = course.authorId === (store.user?.id ?? 'u-me')
+
+  return (
+    <div className="screen">
+      <AppBar
+        title={course.title}
+        sub={`${course.authorName} · ${course.theme}`}
+        onBack={goBack}
+        right={
+          <div className="flexrow" style={{ gap: 6 }}>
+            <button
+              className="btn xs"
+              onClick={async () => {
+                const url = `${window.location.origin}${window.location.pathname}#/s/${course.shareToken}`
+                try {
+                  await navigator.clipboard.writeText(url)
+                } catch {
+                  /* 클립보드를 쓸 수 없는 환경은 토스트만 표시 */
+                }
+                store.toast('공유 링크를 복사했어요')
+              }}
+            >
+              공유
+            </button>
+            {!isMine && (
+              <button className="btn xs" onClick={() => setReportOpen(true)}>
+                신고
+              </button>
+            )}
+          </div>
+        }
+      />
+
+      <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 14px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--line)' }}>
+        <MapCanvas places={stats.places} showRoute legs={stats.legs} seed={13} />
+      </div>
+
+      <div className="scroll pad" style={{ marginTop: 12 }}>
+        <div className="flexrow" style={{ gap: 6, marginBottom: 8 }}>
+          <span className="pill public">공개</span>
+          <span className="pill">읽기 전용</span>
+        </div>
+        <div className="bold" style={{ fontSize: 18 }}>
+          {course.title}
+        </div>
+        <div className="tiny muted" style={{ marginTop: 4 }}>
+          작성자 {course.authorName} · {stats.regions.join('·')} · {course.theme} ·{' '}
+          {stats.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'} · {course.places.length}곳 · 약{' '}
+          {fmtDuration(stats.total)}
+        </div>
+        {course.description && (
+          <div className="small" style={{ marginTop: 10, color: 'var(--ink-2)' }}>
+            {course.description}
+          </div>
+        )}
+
+        <div className="section-title">방문 순서</div>
+        {course.places.map((cp, i) => {
+          const place = PLACE_MAP[cp.placeId]
+          const item = stats.schedule[i]
+          const leg = stats.legs[i]
+          return (
+            <div key={cp.uid}>
+              <div className="card" style={{ padding: 12 }}>
+                <div className="list-item">
+                  <span className="num">{i + 1}</span>
+                  <div className="body">
+                    <div className="between">
+                      <span className="name truncate">{place?.name}</span>
+                      <span className="tiny bold">
+                        {fmtTime(item?.arrive ?? null)}–{fmtTime(item?.leave ?? null)}
+                      </span>
+                    </div>
+                    <div className="meta truncate">
+                      {place?.region} · {place?.category}
+                      {cp.memo ? ` · ${cp.memo}` : ''}
+                    </div>
+                  </div>
+                  <Thumb tone={place?.tone ?? '#ddd'} />
+                </div>
+              </div>
+              {leg && (
+                <div className={`leg${leg.minutes === null ? ' error' : ''}`}>
+                  <span className="seg-btn">
+                    {TRANSPORT_ICON[leg.transport]} {TRANSPORT_LABEL[leg.transport]}{' '}
+                    {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+
+        <div className="banner" style={{ marginTop: 16 }}>
+          이 화면은 읽기 전용이에요. 장소·순서·경로를 편집할 수는 없어요.
+        </div>
+      </div>
+
+      <Modal open={reportOpen} onClose={() => setReportOpen(false)}>
+        <div className="bold" style={{ fontSize: 16, marginBottom: 12 }}>
+          이 코스를 신고할게요
+        </div>
+        <div className="stack" style={{ marginBottom: 14 }}>
+          {REASONS.map((r) => (
+            <button
+              key={r}
+              className={`btn block${reason === r ? ' primary' : ''}`}
+              onClick={() => setReason(r)}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="row">
+          <button className="btn" onClick={() => setReportOpen(false)}>
+            취소
+          </button>
+          <button
+            className="btn accent"
+            onClick={() => {
+              const res = store.addReport(course.id, reason)
+              store.toast(res === 'duplicate' ? '이미 접수된 신고가 검토 중이에요' : '신고가 접수되었어요')
+              setReportOpen(false)
+            }}
+          >
+            신고하기
+          </button>
+        </div>
+      </Modal>
+    </div>
+  )
+}

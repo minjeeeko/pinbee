@@ -1,0 +1,152 @@
+import { useMemo, useState } from 'react'
+import { goBack, navigate } from '../lib/router'
+import { useStore } from '../lib/store'
+import { courseStats } from '../lib/course'
+import { fmtDuration, fmtTime } from '../lib/schedule'
+import { TRANSPORT_ICON, TRANSPORT_LABEL } from '../lib/geo'
+import { PLACE_MAP } from '../data/places'
+import MapCanvas from '../components/MapCanvas'
+import { AppBar, Empty } from '../components/ui'
+import { TransportPicker } from '../components/common'
+
+export default function SummaryScreen({ courseId }: { courseId?: string }) {
+  const store = useStore()
+  const course = courseId ? store.getCourse(courseId) : store.draft
+  const [expanded, setExpanded] = useState(false)
+  const [active, setActive] = useState<number | null>(null)
+  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+
+  if (!course || !stats) {
+    return (
+      <div className="screen">
+        <AppBar title="동선 요약" onBack={goBack} />
+        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="screen">
+      <AppBar
+        title={course.title || '이름 없는 코스'}
+        sub={`${course.date} · ${course.startTime} 출발`}
+        onBack={goBack}
+      />
+
+      <div className="chips" style={{ padding: '0 14px 10px' }}>
+        {stats.places.map((p, i) => (
+          <button
+            key={p.id + i}
+            className={`chip sm${active === i ? ' accent-on' : ''}`}
+            onClick={() => setActive(i)}
+          >
+            <span className="num sm" style={{ background: active === i ? '#fff' : 'var(--ink)', color: active === i ? 'var(--accent)' : '#fff' }}>
+              {i + 1}
+            </span>
+            {p.name.length > 6 ? p.name.slice(0, 6) + '…' : p.name}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
+        <MapCanvas
+          places={stats.places}
+          showRoute
+          legs={stats.legs}
+          activeIndex={active}
+          onSelect={setActive}
+          seed={9}
+          insetBottom={expanded ? 380 : 170}
+        />
+
+        <div
+          style={{
+            position: 'absolute',
+            left: 14,
+            right: 14,
+            bottom: 14,
+            zIndex: 5,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <div className="card" style={{ boxShadow: 'var(--shadow)' }}>
+            <div className="between" onClick={() => setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
+              <div>
+                <div className="bold">
+                  동선 총 {course.places.length}곳 · 이동 {fmtDuration(stats.travel)}
+                </div>
+                <div className="tiny muted">
+                  {stats.endMinutes !== null
+                    ? `${course.startTime} 출발 · ${fmtTime(stats.endMinutes)} 종료 예정`
+                    : '일부 구간을 계산할 수 없어 종료 시각을 알 수 없어요'}
+                </div>
+              </div>
+              <span className="muted">{expanded ? '⌄' : '⌃'}</span>
+            </div>
+
+            {expanded && (
+              <>
+                <div className="divider" />
+                <div className="stack">
+                  {stats.legs.map((leg, i) => (
+                    <div key={i} className="card flat" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                      <div className="between" style={{ marginBottom: 6 }}>
+                        <span className="small bold truncate">
+                          {i + 1} {PLACE_MAP[leg.fromPlaceId]?.name} → {i + 2} {PLACE_MAP[leg.toPlaceId]?.name}
+                        </span>
+                        <span className="tiny muted">{leg.distanceKm.toFixed(1)}km</span>
+                      </div>
+                      <div className="between">
+                        <TransportPicker
+                          value={leg.transport}
+                          onChange={(t) => store.setLegTransport(course.id, i, t)}
+                        />
+                        <span className={`small bold${leg.minutes === null ? ' ' : ''}`} style={{ color: leg.minutes === null ? 'var(--accent-ink)' : undefined }}>
+                          {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
+                        </span>
+                      </div>
+                      {leg.minutes === null && (
+                        <div className="banner danger" style={{ marginTop: 8 }}>
+                          {leg.error}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {stats.legs.length === 0 && (
+                    <div className="tiny muted">장소를 2곳 이상 추가하면 구간 정보가 표시돼요.</div>
+                  )}
+                </div>
+                <div className="divider" />
+                <div className="flexrow" style={{ flexWrap: 'wrap', gap: 6 }}>
+                  <button className="chip sm" onClick={() => navigate('/order/' + course.id)}>
+                    순서 편집
+                  </button>
+                  <button className="chip sm" onClick={() => navigate('/timeline/' + course.id)}>
+                    시간 보기
+                  </button>
+                  <button className="chip sm" onClick={() => navigate('/prefs/' + course.id)}>
+                    조건 점검
+                  </button>
+                  <span className="chip sm">
+                    {stats.transports.map((t) => `${TRANSPORT_ICON[t]}${TRANSPORT_LABEL[t]}`).join(' · ') || '이동수단 없음'}
+                  </span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="row">
+            <button className="btn" onClick={() => navigate('/search/' + course.id)}>
+              장소 추가
+            </button>
+            <button className="btn primary" onClick={() => navigate('/save/' + course.id)}>
+              저장·공유
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
