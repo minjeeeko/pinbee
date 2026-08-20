@@ -222,14 +222,18 @@ export default function MapCanvas({
       </svg>
 
       <div className="map-tools" style={{ top: toolsTop }}>
-        <button className="map-tool" onClick={() => zoom(1.3)}>
-          확대
+        <button className="map-tool icon" onClick={() => zoom(1.3)} aria-label="확대">
+          +
         </button>
-        <button className="map-tool" onClick={() => zoom(1 / 1.3)}>
-          축소
+        <button className="map-tool icon" onClick={() => zoom(1 / 1.3)} aria-label="축소">
+          -
         </button>
-        <button className="map-tool" onClick={() => setView({ x: 0, y: 0, k: 1 })}>
-          전체
+        <button className="map-tool icon" onClick={() => setView({ x: 0, y: 0, k: 1 })} aria-label="전체 보기">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
+            <ellipse cx="8" cy="8" rx="2.6" ry="6.5" stroke="currentColor" strokeWidth="1.3" />
+            <line x1="1.5" y1="8" x2="14.5" y2="8" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
         </button>
       </div>
     </div>

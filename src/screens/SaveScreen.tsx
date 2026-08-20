@@ -56,7 +56,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       return
     }
     setSaveError('')
-    store.updateCourse(course.id, { authorId: store.user.id, authorName: store.user.name })
+    store.updateCourse(course.id, { authorId: store.user.id, authorName: store.user.name, saved: true })
     store.toast('코스를 저장했어요')
     navigate('/me')
   }

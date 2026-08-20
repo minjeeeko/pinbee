@@ -45,6 +45,7 @@ export function newCourse(authorId: string, authorName: string): Course {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     theme: '데이트',
+    saved: false,
   }
 }
 

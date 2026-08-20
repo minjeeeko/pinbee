@@ -32,6 +32,7 @@ export const SEED_COURSES: Course[] = [
     shareToken: 'sh9f2a',
     createdAt: Date.now() - 86400000 * 6,
     updatedAt: Date.now() - 86400000 * 6,
+    saved: true,
     theme: '데이트',
   },
   {
@@ -54,6 +55,7 @@ export const SEED_COURSES: Course[] = [
     shareToken: 'sh4c1b',
     createdAt: Date.now() - 86400000 * 3,
     updatedAt: Date.now() - 86400000 * 3,
+    saved: true,
     theme: '카페 투어',
   },
   {
@@ -76,6 +78,7 @@ export const SEED_COURSES: Course[] = [
     shareToken: 'sh71d0',
     createdAt: Date.now() - 86400000 * 10,
     updatedAt: Date.now() - 86400000 * 9,
+    saved: true,
     theme: '관광',
   },
   {
@@ -93,6 +96,7 @@ export const SEED_COURSES: Course[] = [
     shareToken: 'sh22e7',
     createdAt: Date.now() - 86400000 * 2,
     updatedAt: Date.now() - 86400000 * 2,
+    saved: true,
     theme: '친구 모임',
   },
 ]

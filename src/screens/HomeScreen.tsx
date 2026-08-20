@@ -3,21 +3,17 @@ import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { fmtDuration } from '../lib/schedule'
+import { haversineKm } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import BottomSheet from '../components/BottomSheet'
-import SortableList from '../components/SortableList'
 import { Empty, Modal, Thumb } from '../components/ui'
-import { LegRow, PlaceEditorModal } from '../components/common'
-import type { CoursePlace } from '../lib/types'
+import { PlaceEditorModal } from '../components/common'
 
 export default function HomeScreen() {
   const store = useStore()
   const course = store.draft
-  const [showRoute, setShowRoute] = useState(true)
-  const [showTimes, setShowTimes] = useState(true)
   const [editing, setEditing] = useState<string | null>(null)
-  const [addOpen, setAddOpen] = useState(false)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [sheetFraction, setSheetFraction] = useState(0.44)
 
@@ -55,8 +51,8 @@ export default function HomeScreen() {
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <MapCanvas
           places={places}
-          showRoute={showRoute}
-          legs={showTimes ? stats.legs : undefined}
+          showRoute={false}
+          showNumbers={false}
           activeIndex={null}
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
           seed={11}
@@ -69,18 +65,6 @@ export default function HomeScreen() {
           <button className="searchbar" style={{ flex: 1 }} onClick={() => navigate('/search/' + course.id)}>
             <span className="placeholder">장소·지역 검색</span>
           </button>
-          <button className="btn sm primary" style={{ flex: 'none' }} onClick={() => setAddOpen(true)}>
-            추가
-          </button>
-        </div>
-
-        <div className="map-float" style={{ bottom: 12, right: 'auto' }}>
-          <button className={`chip sm${showRoute ? ' on' : ' outline'}`} onClick={() => setShowRoute((v) => !v)}>
-            동선 보기
-          </button>
-          <button className={`chip sm${showTimes ? ' on' : ' outline'}`} onClick={() => setShowTimes((v) => !v)}>
-            구간 시간
-          </button>
         </div>
 
         <BottomSheet
@@ -90,12 +74,12 @@ export default function HomeScreen() {
             <div style={{ padding: '2px 16px 8px' }}>
               <div className="between">
                 <div style={{ minWidth: 0 }}>
-                  <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
-                    {course.title || '이름 없는 코스'}
-                  </div>
-                  <div className="tiny muted">
-                    {course.places.length}곳 · 이동 {fmtDuration(stats.travel)} · 총 {fmtDuration(stats.total)}
-                  </div>
+                  {course.saved && course.title && (
+                    <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
+                      {course.title}
+                    </div>
+                  )}
+                  <div className="tiny muted">{course.places.length}곳</div>
                 </div>
                 <button className="btn xs" onClick={() => setPickerOpen(true)}>
                   코스 전환
@@ -109,57 +93,50 @@ export default function HomeScreen() {
               title="아직 추가한 장소가 없어요"
               desc="검색하거나 저장 장소에서 불러와 코스를 시작하세요."
               action={
-                <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
-                  장소 검색하기
-                </button>
+                <div className="stack">
+                  <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
+                    장소 검색하기
+                  </button>
+                  <button className="btn" onClick={() => navigate('/import/' + course.id)}>
+                    불러오기
+                  </button>
+                </div>
               }
             />
           ) : (
             <>
-              {stats.uncomputable.length > 0 && (
-                <div className="banner alert" style={{ marginBottom: 10 }}>
-                  <div className="t">경로를 계산할 수 없는 구간이 {stats.uncomputable.length}개 있어요</div>
-                  구간의 이동수단을 바꾸면 다시 계산할 수 있어요.
-                </div>
-              )}
-              <SortableList
-                items={course.places}
-                keyOf={(p: CoursePlace) => p.uid}
-                onReorder={(next) => {
-                  store.reorderCourse(course.id, next)
-                  store.toast('방문 순서를 변경했어요')
-                }}
-                renderItem={(cp, i, handle) => {
-                  const place = PLACE_MAP[cp.placeId]
-                  const leg = stats.legs[i]
-                  return (
-                    <div>
-                      <div className="card" style={{ padding: 12 }}>
-                        <div className="list-item">
-                          <span className="num">{i + 1}</span>
-                          <div className="body" onClick={() => setEditing(cp.uid)}>
-                            <div className="name truncate">{place?.name}</div>
-                            <div className="meta truncate">
-                              {place?.category} · 체류 {fmtDuration(cp.stayMinutes)}
-                              {cp.memo ? ` · 메모 있음` : ''}
-                            </div>
+              {course.places.map((cp, i) => {
+                const place = PLACE_MAP[cp.placeId]
+                const next = course.places[i + 1]
+                const nextPlace = next ? PLACE_MAP[next.placeId] : null
+                return (
+                  <div key={cp.uid}>
+                    <div className="card tap" style={{ padding: 12 }} onClick={() => setEditing(cp.uid)}>
+                      <div className="list-item">
+                        <div className="body">
+                          <div className="name truncate">{place?.name}</div>
+                          <div className="meta truncate">
+                            {place?.category} · 좋아요 {place?.likeCount ?? 0}
                           </div>
-                          <Thumb />
-                          <span {...handle}>순서</span>
                         </div>
+                        <Thumb />
                       </div>
-                      {leg && (
-                        <LegRow
-                          leg={leg}
-                          onChangeTransport={(t) => store.setLegTransport(course.id, i, t)}
-                        />
-                      )}
                     </div>
-                  )
-                }}
-              />
+                    {nextPlace && place && (
+                      <div className="leg-distance">{haversineKm(place, nextPlace).toFixed(1)}km</div>
+                    )}
+                  </div>
+                )
+              })}
 
-              <div className="row" style={{ marginTop: 16 }}>
+              <button
+                className="btn ghost block"
+                style={{ marginTop: 16 }}
+                onClick={() => navigate('/import/' + course.id)}
+              >
+                불러오기
+              </button>
+              <div className="row" style={{ marginTop: 10 }}>
                 <button className="btn" onClick={() => navigate('/order/' + course.id)}>
                   순서 정하기
                 </button>
@@ -171,7 +148,7 @@ export default function HomeScreen() {
                 코스 저장
               </button>
               <div className="tiny muted" style={{ textAlign: 'center', marginTop: 10 }}>
-                카드를 드래그하면 방문 순서를 바꿀 수 있어요
+                순서 정하기에서 방문 순서와 동선을 정할 수 있어요
               </div>
             </>
           )}
@@ -191,39 +168,6 @@ export default function HomeScreen() {
           setEditing(null)
         }}
       />
-
-      <Modal open={addOpen} onClose={() => setAddOpen(false)}>
-        <div className="modal-title">장소 추가</div>
-        <div className="stack">
-          <button
-            className="btn block"
-            onClick={() => {
-              setAddOpen(false)
-              navigate('/search/' + course.id)
-            }}
-          >
-            장소 검색으로 추가
-          </button>
-          <button
-            className="btn block"
-            onClick={() => {
-              setAddOpen(false)
-              navigate('/import/' + course.id)
-            }}
-          >
-            저장 장소·이미지·텍스트 불러오기
-          </button>
-          <button
-            className="btn block"
-            onClick={() => {
-              setAddOpen(false)
-              navigate('/prefs/' + course.id)
-            }}
-          >
-            선호 조건으로 코스 점검
-          </button>
-        </div>
-      </Modal>
 
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)}>
         <div className="between" style={{ marginBottom: 12 }}>
@@ -252,12 +196,14 @@ export default function HomeScreen() {
               }}
             >
               <div className="between">
-                <div className="bold truncate">{c.title || '이름 없는 코스'}</div>
+                <div className="bold truncate">{c.saved && c.title ? c.title : '이름 없는 코스'}</div>
                 <span className={`pill${c.visibility === 'public' ? ' dark' : ''}`}>
                   {c.visibility === 'public' ? '공개' : '비공개'}
                 </span>
               </div>
-              <div className="tiny muted">{c.places.length}곳 · {fmtDuration(courseStats(c).total)}</div>
+              <div className="tiny muted">
+                {c.places.length}곳 · {fmtDuration(courseStats(c).total)}
+              </div>
             </div>
           ))}
         </div>

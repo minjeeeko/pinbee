@@ -18,6 +18,8 @@ export interface Place {
   lng: number
   hours?: OpenHours
   desc?: string
+  /** 저장한 사용자 수 (프로토타입 목데이터) */
+  likeCount: number
 }
 
 export interface CoursePlace {
@@ -50,6 +52,8 @@ export interface Course {
   createdAt: number
   updatedAt: number
   theme: string
+  /** 저장(코스 저장) 완료 여부. 편집 중인 초안은 false */
+  saved: boolean
 }
 
 export interface Preferences {
