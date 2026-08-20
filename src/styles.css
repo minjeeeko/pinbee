@@ -279,9 +279,24 @@ input, textarea { -webkit-appearance: none; }
 .searchbar input::placeholder { color: var(--muted); }
 .searchbar .placeholder { flex: 1; text-align: left; color: var(--muted); font-size: 14px; }
 
-/* ── 지도 */
+/* ── 지도 (네이버 Dynamic Map) */
 .map { position: absolute; inset: 0; background: var(--map-base); overflow: hidden; }
-.map svg { display: block; width: 100%; height: 100%; touch-action: none; }
+.map-status {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  max-width: 78%;
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: var(--r-card);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--fg);
+}
 .map-overlay { position: absolute; z-index: 3; }
 .map-float { position: absolute; left: var(--sp-lg); right: var(--sp-lg); z-index: 4; display: flex; gap: var(--sp-md); }
 .map-tools { position: absolute; right: var(--sp-lg); z-index: 3; display: flex; flex-direction: column; gap: var(--sp-sm); }
@@ -304,14 +319,6 @@ input, textarea { -webkit-appearance: none; }
   font-size: 18px;
   font-weight: 500;
   line-height: 1;
-}
-.pin-label {
-  font-size: 11px;
-  font-weight: 700;
-  fill: var(--ink);
-  paint-order: stroke;
-  stroke: rgba(255, 255, 255, .92);
-  stroke-width: 3px;
 }
 
 /* ── 카드 */

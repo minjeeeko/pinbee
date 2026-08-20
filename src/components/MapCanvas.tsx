@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Leg, Place } from '../lib/types'
-import { curvePath, fitProjection } from '../lib/geo'
+import { loadNaverMaps, onNaverMapAuthFail } from '../lib/naverMaps'
 
 interface Props {
   places: Place[]
@@ -11,50 +11,23 @@ interface Props {
   activeIndex?: number | null
   legs?: Leg[]
   onSelect?: (index: number) => void
-  /** 지도 배경 무늬 시드 */
+  /** @deprecated 실제 지도로 전환하며 더 이상 쓰이지 않음 */
   seed?: number
   /** 시트·카드에 가려지는 영역 (px) */
   insetTop?: number
   insetBottom?: number
 }
 
-function mulberry(seed: number) {
-  let a = seed
-  return () => {
-    a |= 0
-    a = (a + 0x6d2b79f5) | 0
-    let t = Math.imul(a ^ (a >>> 15), 1 | a)
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
-  }
-}
+const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
+const INK = '#123350'
 
-/** 지도처럼 보이는 도로/블록 배경을 시드 기반으로 생성 */
-function useBackdrop(w: number, h: number, seed: number) {
-  return useMemo(() => {
-    if (!w || !h) return { roads: [], blocks: [], water: '' }
-    const rnd = mulberry(seed)
-    const roads: { d: string; width: number }[] = []
-    for (let i = 0; i < 7; i++) {
-      const y = h * (0.08 + 0.13 * i) + rnd() * 26 - 13
-      const bend = (rnd() - 0.5) * 90
-      roads.push({ d: `M -40 ${y} Q ${w / 2} ${y + bend} ${w + 40} ${y + (rnd() - 0.5) * 50}`, width: rnd() > 0.7 ? 7 : 3.5 })
-    }
-    for (let i = 0; i < 6; i++) {
-      const x = w * (0.1 + 0.16 * i) + rnd() * 22 - 11
-      const bend = (rnd() - 0.5) * 80
-      roads.push({ d: `M ${x} -40 Q ${x + bend} ${h / 2} ${x + (rnd() - 0.5) * 40} ${h + 40}`, width: rnd() > 0.75 ? 6 : 3 })
-    }
-    const blocks: { x: number; y: number; w: number; h: number; r: number }[] = []
-    for (let i = 0; i < 26; i++) {
-      const bw = 26 + rnd() * 62
-      const bh = 22 + rnd() * 54
-      blocks.push({ x: rnd() * (w - bw), y: rnd() * (h - bh), w: bw, h: bh, r: 3 + rnd() * 4 })
-    }
-    const wy = h * (0.62 + rnd() * 0.2)
-    const water = `M -40 ${wy} Q ${w * 0.3} ${wy - 46} ${w * 0.6} ${wy + 10} T ${w + 40} ${wy - 18} L ${w + 40} ${h + 40} L -40 ${h + 40} Z`
-    return { roads, blocks, water }
-  }, [w, h, seed])
+function pinIcon(index: number, showNumbers: boolean, active: boolean) {
+  const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
+  const ring = active ? `box-shadow:0 1px 4px rgba(18,51,80,.35),0 0 0 6px rgba(18,51,80,.18);` : `box-shadow:0 1px 4px rgba(18,51,80,.35);`
+  const label = showNumbers
+    ? `display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:${active ? 13 : 12}px;font-family:'Suit',sans-serif;`
+    : ''
+  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${INK};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
 }
 
 export default function MapCanvas({
@@ -65,167 +38,178 @@ export default function MapCanvas({
   activeIndex = null,
   legs,
   onSelect,
-  seed = 7,
   insetTop = 0,
   insetBottom = 0,
 }: Props) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [size, setSize] = useState({ w: 0, h: 0 })
-  const [view, setView] = useState({ x: 0, y: 0, k: 1 })
-  const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean } | null>(null)
+  const elRef = useRef<HTMLDivElement>(null)
+  const mapRef = useRef<any>(null)
+  const markersRef = useRef<any[]>([])
+  const legLabelsRef = useRef<any[]>([])
+  const polylineRef = useRef<any>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading')
 
+  // 지도 초기화 (컨테이너당 최초 1회)
   useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver(() => setSize({ w: el.clientWidth, h: el.clientHeight }))
-    ro.observe(el)
-    setSize({ w: el.clientWidth, h: el.clientHeight })
-    return () => ro.disconnect()
-  }, [])
-
-  // 장소 구성이 바뀌면 화면을 다시 맞춘다
-  const key = places.map((p) => p.id).join(',')
-  useEffect(() => setView({ x: 0, y: 0, k: 1 }), [key])
-
-  const backdrop = useBackdrop(size.w, size.h, seed)
-  const proj = useMemo(
-    () => fitProjection(places, size.w || 320, size.h || 420, 56, { top: insetTop, bottom: insetBottom }),
-    [places, size.w, size.h, insetTop, insetBottom],
-  )
-  const pts = useMemo(() => places.map((p) => proj.toXY(p)), [places, proj])
-  const path = useMemo(() => (showRoute ? curvePath(pts) : ''), [pts, showRoute])
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false }
-    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
-  }, [view.x, view.y])
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const d = drag.current
-    if (!d) return
-    const dx = e.clientX - d.x
-    const dy = e.clientY - d.y
-    if (Math.abs(dx) + Math.abs(dy) > 3) d.moved = true
-    setView((v) => ({ ...v, x: d.vx + dx, y: d.vy + dy }))
-  }, [])
-
-  const onPointerUp = useCallback(() => {
-    drag.current = null
-  }, [])
-
-  const zoom = (factor: number) =>
-    setView((v) => ({ ...v, k: Math.min(3.2, Math.max(0.6, v.k * factor)) }))
-
-  // 서로 가까운 핀은 이름표를 생략해 겹침을 줄인다
-  const labelVisible = useMemo(() => {
-    const shown: { x: number; y: number }[] = []
-    return pts.map((p) => {
-      const clash = shown.some((s) => Math.abs(s.x - p.x) < 74 && Math.abs(s.y - p.y) < 26)
-      if (!clash) shown.push(p)
-      return !clash
+    let cancelled = false
+    loadNaverMaps()
+      .then(() => {
+        if (cancelled || !elRef.current || !window.naver?.maps) return
+        mapRef.current = new window.naver.maps.Map(elRef.current, {
+          center: new window.naver.maps.LatLng(SEOUL_CENTER.lat, SEOUL_CENTER.lng),
+          zoom: 14,
+          zoomControl: false,
+        })
+        setStatus('ready')
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('error')
+      })
+    const off = onNaverMapAuthFail(() => {
+      if (!cancelled) setStatus('error')
     })
-  }, [pts])
+    return () => {
+      cancelled = true
+      off()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const legLabel = (i: number) => {
-    const l = legs?.[i]
-    if (!l) return null
-    return l.minutes === null ? '계산 불가' : `${l.distanceKm.toFixed(1)}km`
+  // 장소·동선이 바뀔 때마다 마커와 경로선을 다시 그린다
+  useEffect(() => {
+    if (status !== 'ready' || !mapRef.current) return
+    const naver = window.naver
+    const map = mapRef.current
+
+    markersRef.current.forEach((m) => m.setMap(null))
+    markersRef.current = []
+    legLabelsRef.current.forEach((m) => m.setMap(null))
+    legLabelsRef.current = []
+    if (polylineRef.current) {
+      polylineRef.current.setMap(null)
+      polylineRef.current = null
+    }
+
+    if (places.length === 0) return
+
+    const positions = places.map((p) => new naver.maps.LatLng(p.lat, p.lng))
+
+    if (showRoute && positions.length > 1) {
+      polylineRef.current = new naver.maps.Polyline({
+        map,
+        path: positions,
+        strokeColor: INK,
+        strokeWeight: 4,
+        strokeOpacity: 0.9,
+        strokeLineCap: 'round',
+        strokeLineJoin: 'round',
+      })
+    }
+
+    places.forEach((place, i) => {
+      const active = activeIndex === i
+      const dot = pinIcon(i, showNumbers, active)
+      const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
+      const content = showLabels
+        ? `<div style="display:flex;flex-direction:column;align-items:center;">
+             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${INK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Suit',sans-serif;">${
+               place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
+             }</span>
+             ${dot}
+           </div>`
+        : dot
+
+      const marker = new naver.maps.Marker({
+        position: positions[i],
+        map,
+        icon: {
+          content,
+          anchor: new naver.maps.Point(size / 2, showLabels ? size + 18 : size / 2),
+        },
+        zIndex: active ? 200 : 100 - i,
+      })
+      if (onSelect) {
+        naver.maps.Event.addListener(marker, 'click', () => onSelect(i))
+      }
+      markersRef.current.push(marker)
+
+      const leg = legs?.[i]
+      const next = positions[i + 1]
+      if (showRoute && leg && next) {
+        const midLat = (positions[i].lat() + next.lat()) / 2
+        const midLng = (positions[i].lng() + next.lng()) / 2
+        const label = leg.minutes === null ? '계산 불가' : `${leg.distanceKm.toFixed(1)}km`
+        const overlay = new naver.maps.Marker({
+          position: new naver.maps.LatLng(midLat, midLng),
+          map,
+          icon: {
+            content: `<div style="padding:3px 8px;background:#fff;border:1px solid #cfe0ea;border-radius:10px;font-size:11px;font-weight:600;color:#33424e;white-space:nowrap;font-family:'Suit',sans-serif;">${label}</div>`,
+            anchor: new naver.maps.Point(-4, 10),
+          },
+          zIndex: 50,
+        })
+        legLabelsRef.current.push(overlay)
+      }
+    })
+
+    if (positions.length === 1) {
+      map.setCenter(positions[0])
+      map.setZoom(16)
+    } else {
+      const bounds = new naver.maps.LatLngBounds(positions[0], positions[0])
+      positions.forEach((p) => bounds.extend(p))
+      try {
+        map.fitBounds(bounds, { top: insetTop + 40, right: 40, bottom: insetBottom + 40, left: 40 })
+      } catch {
+        map.fitBounds(bounds)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [places, showRoute, showNumbers, showLabels, activeIndex, legs, status])
+
+  const zoom = (delta: number) => {
+    const map = mapRef.current
+    if (map) map.setZoom(map.getZoom() + delta)
+  }
+
+  const fitAll = () => {
+    const map = mapRef.current
+    const naver = window.naver
+    if (!map || !naver || places.length === 0) return
+    const positions = places.map((p) => new naver.maps.LatLng(p.lat, p.lng))
+    if (positions.length === 1) {
+      map.setCenter(positions[0])
+      map.setZoom(16)
+      return
+    }
+    const bounds = new naver.maps.LatLngBounds(positions[0], positions[0])
+    positions.forEach((p) => bounds.extend(p))
+    try {
+      map.fitBounds(bounds, { top: insetTop + 40, right: 40, bottom: insetBottom + 40, left: 40 })
+    } catch {
+      map.fitBounds(bounds)
+    }
   }
 
   return (
-    <div className="map" ref={ref}>
-      <svg
-        viewBox={`0 0 ${size.w || 320} ${size.h || 420}`}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        <rect width="100%" height="100%" fill="var(--map-base)" />
-        <g transform={`translate(${view.x} ${view.y}) scale(${view.k}) `} style={{ transformOrigin: 'center' }}>
-          <g opacity="0.75">
-            {backdrop.blocks.map((b, i) => (
-              <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} rx={b.r} fill="var(--map-block)" />
-            ))}
-            {backdrop.water && <path d={backdrop.water} fill="var(--map-water)" />}
-            {backdrop.roads.map((r, i) => (
-              <path key={i} d={r.d} stroke="var(--map-road)" strokeWidth={r.width} fill="none" strokeLinecap="round" />
-            ))}
-          </g>
+    <div className="map">
+      <div ref={elRef} style={{ position: 'absolute', inset: 0 }} />
 
-          {showRoute && path && (
-            <>
-              <path d={path} stroke="rgba(17,17,17,.12)" strokeWidth={11} fill="none" strokeLinecap="round" />
-              <path
-                d={path}
-                stroke="var(--ink)"
-                strokeWidth={4}
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeDasharray={legs?.some((l) => l.minutes === null) ? '14 8' : undefined}
-              />
-            </>
-          )}
-
-          {showRoute &&
-            legs &&
-            pts.slice(0, -1).map((p, i) => {
-              const n = pts[i + 1]
-              const label = legLabel(i)
-              if (!label) return null
-              const mx = (p.x + n.x) / 2
-              const my = (p.y + n.y) / 2
-              // 핀과 겹치는 위치의 구간 라벨은 생략
-              if (pts.some((q) => Math.abs(q.x - mx) < 34 && Math.abs(q.y - my) < 22)) return null
-              const w = label.length * 6.5 + 16
-              return (
-                <g key={`leg-${i}`} transform={`translate(${mx - w / 2} ${my - 10})`}>
-                  <rect width={w} height={20} rx={10} fill="var(--canvas)" stroke="var(--border)" />
-                  <text x={w / 2} y={14} textAnchor="middle" fontSize="11" fontWeight="500" fill="var(--fg)">
-                    {label}
-                  </text>
-                </g>
-              )
-            })}
-
-          {pts.map((p, i) => {
-            const active = activeIndex === i
-            const place = places[i]
-            const r = showNumbers ? (active ? 17 : 14) : 9
-            return (
-              <g
-                key={place.id + i}
-                transform={`translate(${p.x} ${p.y})`}
-                onClick={() => !drag.current?.moved && onSelect?.(i)}
-                style={{ cursor: onSelect ? 'pointer' : 'default' }}
-              >
-                {active && <circle r={r + 5} fill="none" stroke="var(--ink)" strokeWidth="1" opacity="0.35" />}
-                <circle r={r} fill="var(--ink)" stroke="var(--canvas)" strokeWidth="2" />
-                {showNumbers && (
-                  <text y="4.5" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">
-                    {i + 1}
-                  </text>
-                )}
-                {showLabels && labelVisible[i] && (
-                  <text className="pin-label" y={-r - 7} textAnchor="middle">
-                    {place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name}
-                  </text>
-                )}
-              </g>
-            )
-          })}
-        </g>
-      </svg>
+      {status !== 'ready' && (
+        <div className="map-status">
+          {status === 'loading'
+            ? '지도를 불러오는 중이에요…'
+            : '네이버 지도를 불러오지 못했어요. Client ID와 등록된 서비스 URL을 확인해주세요.'}
+        </div>
+      )}
 
       <div className="map-tools" style={{ bottom: insetBottom + 16 }}>
-        <button className="map-tool icon" onClick={() => zoom(1.3)} aria-label="확대">
+        <button className="map-tool icon" onClick={() => zoom(1)} aria-label="확대">
           +
         </button>
-        <button className="map-tool icon" onClick={() => zoom(1 / 1.3)} aria-label="축소">
+        <button className="map-tool icon" onClick={() => zoom(-1)} aria-label="축소">
           -
         </button>
-        <button className="map-tool icon" onClick={() => setView({ x: 0, y: 0, k: 1 })} aria-label="전체 보기">
+        <button className="map-tool icon" onClick={fitAll} aria-label="전체 보기">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
             <ellipse cx="8" cy="8" rx="2.6" ry="6.5" stroke="currentColor" strokeWidth="1.3" />
