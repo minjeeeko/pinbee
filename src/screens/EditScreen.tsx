@@ -20,7 +20,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="screen">
         <AppBar title="코스 편집" onBack={goBack} />
-        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+        <Empty title="코스를 찾을 수 없어요" />
       </div>
     )
   }
@@ -31,19 +31,19 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
         title="코스 편집"
         onBack={goBack}
         right={
-          <button className="btn xs" onClick={() => navigate('/save/' + course.id)}>
+          <button className="textbtn strong" onClick={() => navigate('/save/' + course.id)}>
             저장
           </button>
         }
       />
 
-      <div style={{ position: 'relative', height: '38%', minHeight: 190, margin: '0 14px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--line)' }}>
+      <div style={{ position: 'relative', height: '38%', minHeight: 190, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas places={stats.places} showRoute={false} showNumbers={false} showLabels seed={5} />
-        <div style={{ position: 'absolute', left: 10, top: 10, zIndex: 3 }}>
+        <div style={{ position: 'absolute', left: 16, top: 16, zIndex: 3 }}>
           <span className="chip sm on">추가한 장소 {course.places.length}곳</span>
         </div>
-        <div style={{ position: 'absolute', left: 10, bottom: 10, zIndex: 3 }}>
-          <span className="chip sm">지도에 분포만 표시 · 순서 없음</span>
+        <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
+          <span className="chip sm outline">지도에 분포만 표시 · 순서 없음</span>
         </div>
       </div>
 
@@ -57,7 +57,6 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
 
         {course.places.length === 0 ? (
           <Empty
-            icon="📍"
             title="장소를 추가해 코스를 시작하세요"
             action={
               <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
@@ -75,7 +74,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
               return (
                 <div className="card" style={{ padding: 12 }}>
                   <div className="list-item">
-                    <span className="num accent">{i + 1}</span>
+                    <span className="num">{i + 1}</span>
                     <div className="body" onClick={() => setEditing(cp.uid)}>
                       <div className="name truncate">{place?.name}</div>
                       <div className="meta truncate">
@@ -83,11 +82,11 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
                       </div>
                       <div className="flexrow" style={{ marginTop: 6, gap: 6 }}>
                         <span className="pill">체류 {fmtDuration(cp.stayMinutes)}</span>
-                        <span className="pill">{cp.memo ? '메모 ✓' : '메모'}</span>
+                        <span className="pill">{cp.memo ? '메모 있음' : '메모 없음'}</span>
                       </div>
                     </div>
-                    <Thumb tone={place?.tone ?? '#ddd'} size="lg" />
-                    <span {...handle}>⠿</span>
+                    <Thumb size="lg" />
+                    <span {...handle}>순서</span>
                   </div>
                 </div>
               )
@@ -97,10 +96,10 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
 
         <div className="row" style={{ marginTop: 12 }}>
           <button className="btn ghost" onClick={() => navigate('/search/' + course.id)}>
-            + 장소 추가
+            장소 추가
           </button>
           <button className="btn ghost" onClick={() => navigate('/import/' + course.id)}>
-            📥 불러오기
+            불러오기
           </button>
         </div>
 
@@ -110,7 +109,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
           disabled={course.places.length < 2}
           onClick={() => navigate('/order/' + course.id)}
         >
-          순서 정하기 →
+          순서 정하기
         </button>
         {course.places.length < 2 && (
           <div className="tiny muted" style={{ textAlign: 'center', marginTop: 8 }}>

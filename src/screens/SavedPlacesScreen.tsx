@@ -35,7 +35,7 @@ export default function SavedPlacesScreen() {
     <div className="screen">
       <div className="appbar">
         <div>
-          <h1>저장 장소</h1>
+          <h1 className="hero">저장 장소</h1>
           <div className="sub">{store.savedPlaceIds.length}곳 저장됨</div>
         </div>
         <div className="spacer" />
@@ -55,9 +55,8 @@ export default function SavedPlacesScreen() {
       <div className="scroll pad" style={{ marginTop: 6 }}>
         {places.length === 0 ? (
           <Empty
-            icon="📭"
             title="저장한 장소가 없어요"
-            desc="장소 검색 결과에서 ☆ 저장을 누르면 여기에 모여요."
+            desc="장소 검색 결과에서 저장을 누르면 여기에 모여요."
             action={
               <button className="btn primary" onClick={() => navigate('/search/' + (course?.id ?? ''))}>
                 장소 검색하기
@@ -68,7 +67,7 @@ export default function SavedPlacesScreen() {
           places.map((p) => (
             <div className="card" key={p.id} style={{ padding: 12 }}>
               <div className="list-item">
-                <Thumb tone={p.tone} size="lg" />
+                <Thumb size="lg" />
                 <div className="body">
                   <div className="name truncate">{p.name}</div>
                   <div className="meta truncate">
@@ -96,9 +95,7 @@ export default function SavedPlacesScreen() {
       </div>
 
       <Modal open={!!dupTarget} onClose={() => setDupTarget(null)} center>
-        <div className="bold" style={{ fontSize: 16, marginBottom: 6 }}>
-          이미 코스에 있는 장소입니다
-        </div>
+        <div className="modal-title">이미 코스에 있는 장소입니다</div>
         <div className="small muted" style={{ marginBottom: 14 }}>
           {dupTarget && PLACE_MAP[dupTarget]?.name}
           {dupTarget ? josa(PLACE_MAP[dupTarget]?.name ?? '', '을', '를') : ''} 한 번 더 추가할까요?

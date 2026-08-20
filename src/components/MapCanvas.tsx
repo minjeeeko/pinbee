@@ -16,6 +16,8 @@ interface Props {
   /** 시트·카드에 가려지는 영역 (px) */
   insetTop?: number
   insetBottom?: number
+  /** 지도 컨트롤의 상단 여백 (검색바 등과 겹치지 않도록) */
+  toolsTop?: number
 }
 
 function mulberry(seed: number) {
@@ -68,6 +70,7 @@ export default function MapCanvas({
   seed = 7,
   insetTop = 0,
   insetBottom = 0,
+  toolsTop = 16,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ w: 0, h: 0 })
@@ -141,25 +144,25 @@ export default function MapCanvas({
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <rect width="100%" height="100%" fill="var(--map)" />
+        <rect width="100%" height="100%" fill="var(--map-base)" />
         <g transform={`translate(${view.x} ${view.y}) scale(${view.k}) `} style={{ transformOrigin: 'center' }}>
           <g opacity="0.75">
             {backdrop.blocks.map((b, i) => (
-              <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} rx={b.r} fill="#e2ddd6" />
+              <rect key={i} x={b.x} y={b.y} width={b.w} height={b.h} rx={b.r} fill="var(--map-block)" />
             ))}
-            {backdrop.water && <path d={backdrop.water} fill="#dfe6e4" />}
+            {backdrop.water && <path d={backdrop.water} fill="var(--map-water)" />}
             {backdrop.roads.map((r, i) => (
-              <path key={i} d={r.d} stroke="#f3f0ec" strokeWidth={r.width} fill="none" strokeLinecap="round" />
+              <path key={i} d={r.d} stroke="var(--map-road)" strokeWidth={r.width} fill="none" strokeLinecap="round" />
             ))}
           </g>
 
           {showRoute && path && (
             <>
-              <path d={path} stroke="rgba(232,84,43,.18)" strokeWidth={11} fill="none" strokeLinecap="round" />
+              <path d={path} stroke="rgba(17,17,17,.12)" strokeWidth={11} fill="none" strokeLinecap="round" />
               <path
                 d={path}
-                stroke="var(--accent)"
-                strokeWidth={5}
+                stroke="var(--ink)"
+                strokeWidth={4}
                 fill="none"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -181,8 +184,8 @@ export default function MapCanvas({
               const w = label.length * 6.5 + 16
               return (
                 <g key={`leg-${i}`} transform={`translate(${mx - w / 2} ${my - 10})`}>
-                  <rect width={w} height={20} rx={10} fill="#fff" stroke="var(--line)" />
-                  <text x={w / 2} y={14} textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--ink-2)">
+                  <rect width={w} height={20} rx={10} fill="var(--canvas)" stroke="var(--border)" />
+                  <text x={w / 2} y={14} textAnchor="middle" fontSize="11" fontWeight="500" fill="var(--fg)">
                     {label}
                   </text>
                 </g>
@@ -200,8 +203,8 @@ export default function MapCanvas({
                 onClick={() => !drag.current?.moved && onSelect?.(i)}
                 style={{ cursor: onSelect ? 'pointer' : 'default' }}
               >
-                <ellipse cx="0" cy={r + 3} rx={r * 0.7} ry="3" fill="rgba(20,17,15,.14)" />
-                <circle r={r} fill={active || !showNumbers ? 'var(--accent)' : 'var(--ink)'} stroke="#fff" strokeWidth="2.5" />
+                {active && <circle r={r + 5} fill="none" stroke="var(--ink)" strokeWidth="1" opacity="0.35" />}
+                <circle r={r} fill="var(--ink)" stroke="var(--canvas)" strokeWidth="2" />
                 {showNumbers && (
                   <text y="4.5" textAnchor="middle" fontSize="12.5" fontWeight="800" fill="#fff">
                     {i + 1}
@@ -218,10 +221,16 @@ export default function MapCanvas({
         </g>
       </svg>
 
-      <div style={{ position: 'absolute', right: 12, top: 12, display: 'flex', flexDirection: 'column', gap: 6, zIndex: 3 }}>
-        <button className="iconbtn" onClick={() => zoom(1.3)} aria-label="확대">+</button>
-        <button className="iconbtn" onClick={() => zoom(1 / 1.3)} aria-label="축소">−</button>
-        <button className="iconbtn" onClick={() => setView({ x: 0, y: 0, k: 1 })} aria-label="맞춤">⤢</button>
+      <div className="map-tools" style={{ top: toolsTop }}>
+        <button className="map-tool" onClick={() => zoom(1.3)}>
+          확대
+        </button>
+        <button className="map-tool" onClick={() => zoom(1 / 1.3)}>
+          축소
+        </button>
+        <button className="map-tool" onClick={() => setView({ x: 0, y: 0, k: 1 })}>
+          전체
+        </button>
       </div>
     </div>
   )

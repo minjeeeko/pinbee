@@ -41,7 +41,6 @@ export default function PrefsScreen({ courseId }: { courseId?: string }) {
       <div className="screen">
         <AppBar title="선호 조건" onBack={goBack} />
         <Empty
-          icon="🗺"
           title="점검할 코스가 없어요"
           action={
             <button className="btn primary" onClick={() => navigate('/edit/' + store.startNewCourse())}>
@@ -152,7 +151,7 @@ export default function PrefsScreen({ courseId }: { courseId?: string }) {
         ) : (
           <div className="stack">
             {issues.map((issue, i) => (
-              <div className={`banner ${issue.kind === 'day' ? 'warn' : 'danger'}`} key={i}>
+              <div className={'banner alert'} key={i}>
                 {issue.text}
               </div>
             ))}
@@ -161,7 +160,7 @@ export default function PrefsScreen({ courseId }: { courseId?: string }) {
 
         <div className="section-title">조정 제안</div>
         {!suggestion || suggestion.same ? (
-          <div className="banner info">
+          <div className="banner">
             지금 순서보다 이동시간이 짧은 대안을 찾지 못했어요. 조건을 완화하거나 장소를 조정해보세요.
           </div>
         ) : (

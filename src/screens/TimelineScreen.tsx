@@ -16,7 +16,7 @@ export default function TimelineScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="screen">
         <AppBar title="일정 시간" onBack={goBack} />
-        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+        <Empty title="코스를 찾을 수 없어요" />
       </div>
     )
   }
@@ -51,13 +51,13 @@ export default function TimelineScreen({ courseId }: { courseId?: string }) {
         </div>
 
         {span !== null && span > DAY_LIMIT && (
-          <div className="banner warn" style={{ marginTop: 10 }}>
+          <div className="banner alert" style={{ marginTop: 10 }}>
             <div className="t">하루 일정 범위를 넘었어요</div>
             전체 {fmtDuration(span)} 일정이에요. 장소를 줄이거나 체류시간을 조정해보세요.
           </div>
         )}
         {stats.conflicts.length > 0 && (
-          <div className="banner danger" style={{ marginTop: 10 }}>
+          <div className="banner alert" style={{ marginTop: 10 }}>
             <div className="t">영업시간과 겹치지 않는 장소가 {stats.conflicts.length}곳 있어요</div>
             출발 시간이나 방문 순서를 바꾸면 해결될 수 있어요.
           </div>
@@ -77,12 +77,12 @@ export default function TimelineScreen({ courseId }: { courseId?: string }) {
                     <div className="between">
                       <span className="name truncate">{place?.name}</span>
                       <span className="small bold">
-                        {fmtTime(item.arrive)} – {fmtTime(item.leave)}
+                        {fmtTime(item.arrive)} - {fmtTime(item.leave)}
                       </span>
                     </div>
                     <div className="meta">
                       {place?.hours
-                        ? `영업 ${fmtTime(place.hours.open)}–${fmtTime(place.hours.close)}`
+                        ? `영업 ${fmtTime(place.hours.open)} - ${fmtTime(place.hours.close)}`
                         : '영업시간 정보 없음'}
                     </div>
                     <div className="flexrow" style={{ marginTop: 8, gap: 8 }}>
@@ -96,7 +96,7 @@ export default function TimelineScreen({ courseId }: { courseId?: string }) {
                     </div>
                     {item.conflictText && item.conflict !== 'none' && (
                       <div
-                        className={`banner ${item.conflict === 'after-close' ? 'danger' : item.conflict === 'before-open' ? 'warn' : ''}`}
+                        className={`banner${item.conflict === 'unknown' ? '' : ' alert'}`}
                         style={{ marginTop: 8 }}
                       >
                         {item.conflictText}
@@ -110,7 +110,7 @@ export default function TimelineScreen({ courseId }: { courseId?: string }) {
           )
         })}
 
-        <div className="card" style={{ marginTop: 14, background: 'var(--surface-2)' }}>
+        <div className="card flat" style={{ marginTop: 16 }}>
           <div className="between">
             <span className="small muted">이동 합계</span>
             <span className="bold small">{fmtDuration(stats.travel)}</span>

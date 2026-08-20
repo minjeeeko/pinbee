@@ -10,7 +10,7 @@ export default function MeScreen() {
   return (
     <div className="screen">
       <div className="appbar">
-        <h1>내 정보</h1>
+        <h1 className="hero">내 정보</h1>
       </div>
 
       <div className="scroll pad">
@@ -42,7 +42,7 @@ export default function MeScreen() {
 
         <div className="section-title">내 코스 {store.myCourses.length}개</div>
         {store.myCourses.length === 0 ? (
-          <Empty icon="🗂" title="저장한 코스가 없어요" />
+          <Empty title="저장한 코스가 없어요" />
         ) : (
           store.myCourses.map((c) => (
             <div key={c.id}>
@@ -64,7 +64,7 @@ export default function MeScreen() {
                   공유 화면
                 </button>
                 <button
-                  className="btn xs danger"
+                  className="btn xs"
                   onClick={() => {
                     store.deleteCourse(c.id)
                     store.toast('코스를 삭제했어요')
@@ -81,7 +81,7 @@ export default function MeScreen() {
         <div className="card tap" onClick={() => navigate('/prefs/' + (store.draft?.id ?? ''))}>
           <div className="between">
             <span className="small bold">선호 조건 설정</span>
-            <span className="muted">›</span>
+            <span className="textbtn">설정</span>
           </div>
           <div className="tiny muted" style={{ marginTop: 3 }}>
             이동수단 · 최대 이동시간 · 선호 장소 유형
@@ -96,7 +96,7 @@ export default function MeScreen() {
         <div className="card tap" onClick={() => resetStore()}>
           <div className="between">
             <span className="small bold">프로토타입 데이터 초기화</span>
-            <span className="muted">›</span>
+            <span className="textbtn">초기화</span>
           </div>
           <div className="tiny muted" style={{ marginTop: 3 }}>
             저장된 코스와 설정을 처음 상태로 되돌려요

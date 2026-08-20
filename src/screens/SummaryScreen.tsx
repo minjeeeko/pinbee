@@ -3,7 +3,7 @@ import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { fmtDuration, fmtTime } from '../lib/schedule'
-import { TRANSPORT_ICON, TRANSPORT_LABEL } from '../lib/geo'
+import { TRANSPORT_LABEL } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty } from '../components/ui'
@@ -20,7 +20,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="screen">
         <AppBar title="동선 요약" onBack={goBack} />
-        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+        <Empty title="코스를 찾을 수 없어요" />
       </div>
     )
   }
@@ -37,10 +37,16 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
         {stats.places.map((p, i) => (
           <button
             key={p.id + i}
-            className={`chip sm${active === i ? ' accent-on' : ''}`}
+            className={`chip sm${active === i ? ' on' : ' outline'}`}
             onClick={() => setActive(i)}
           >
-            <span className="num sm" style={{ background: active === i ? '#fff' : 'var(--ink)', color: active === i ? 'var(--accent)' : '#fff' }}>
+            <span
+              className="num sm"
+              style={{
+                background: active === i ? 'var(--canvas)' : 'var(--ink)',
+                color: active === i ? 'var(--ink)' : 'var(--canvas)',
+              }}
+            >
               {i + 1}
             </span>
             {p.name.length > 6 ? p.name.slice(0, 6) + '…' : p.name}
@@ -71,7 +77,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
             gap: 10,
           }}
         >
-          <div className="card" style={{ boxShadow: 'var(--shadow)' }}>
+          <div className="card">
             <div className="between" onClick={() => setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
               <div>
                 <div className="bold">
@@ -83,7 +89,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                     : '일부 구간을 계산할 수 없어 종료 시각을 알 수 없어요'}
                 </div>
               </div>
-              <span className="muted">{expanded ? '⌄' : '⌃'}</span>
+              <span className="textbtn">{expanded ? '접기' : '자세히'}</span>
             </div>
 
             {expanded && (
@@ -91,7 +97,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                 <div className="divider" />
                 <div className="stack">
                   {stats.legs.map((leg, i) => (
-                    <div key={i} className="card flat" style={{ padding: 10, background: 'var(--surface-2)' }}>
+                    <div key={i} className="card flat" style={{ padding: 10, background: 'var(--map-base)' }}>
                       <div className="between" style={{ marginBottom: 6 }}>
                         <span className="small bold truncate">
                           {i + 1} {PLACE_MAP[leg.fromPlaceId]?.name} → {i + 2} {PLACE_MAP[leg.toPlaceId]?.name}
@@ -103,12 +109,12 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                           value={leg.transport}
                           onChange={(t) => store.setLegTransport(course.id, i, t)}
                         />
-                        <span className={`small bold${leg.minutes === null ? ' ' : ''}`} style={{ color: leg.minutes === null ? 'var(--accent-ink)' : undefined }}>
+                        <span className="small bold">
                           {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
                         </span>
                       </div>
                       {leg.minutes === null && (
-                        <div className="banner danger" style={{ marginTop: 8 }}>
+                        <div className="banner alert" style={{ marginTop: 8 }}>
                           {leg.error}
                         </div>
                       )}
@@ -130,7 +136,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                     조건 점검
                   </button>
                   <span className="chip sm">
-                    {stats.transports.map((t) => `${TRANSPORT_ICON[t]}${TRANSPORT_LABEL[t]}`).join(' · ') || '이동수단 없음'}
+                    {stats.transports.map((t) => TRANSPORT_LABEL[t]).join(' · ') || '이동수단 없음'}
                   </span>
                 </div>
               </>

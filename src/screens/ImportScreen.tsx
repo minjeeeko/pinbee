@@ -43,7 +43,6 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
       <div className="screen">
         <AppBar title="장소 불러오기" onBack={goBack} />
         <Empty
-          icon="🗺"
           title="편집 중인 코스가 없어요"
           action={
             <button className="btn primary" onClick={() => navigate('/edit/' + store.startNewCourse())}>
@@ -114,7 +113,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
       <div className="scroll pad" style={{ paddingTop: 14 }}>
         {tab === 'saved' &&
           (savedPlaces.length === 0 ? (
-            <Empty icon="📭" title="저장한 장소가 없어요" desc="장소 검색에서 ☆ 저장을 눌러 목록을 만들어보세요." />
+            <Empty title="저장한 장소가 없어요" desc="장소 검색 결과에서 저장을 누르면 여기에 모여요." />
           ) : (
             <>
               <div className="between" style={{ marginBottom: 10 }}>
@@ -139,7 +138,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
                   >
                     <div className="list-item">
                       <Checkbox on={on} />
-                      <Thumb tone={p.tone} />
+                      <Thumb />
                       <div className="body">
                         <div className="name truncate">{p.name}</div>
                         <div className="meta truncate">
@@ -158,7 +157,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
           <>
             <div className="grid2">
               <button className="btn ghost" style={{ height: 76, flexDirection: 'column', gap: 2 }} onClick={() => fileRef.current?.click()}>
-                <span>📷 캡처 이미지</span>
+                <span>캡처 이미지</span>
                 <span className="tiny muted">업로드</span>
               </button>
               <button
@@ -166,7 +165,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
                 style={{ height: 76, flexDirection: 'column', gap: 2 }}
                 onClick={() => document.getElementById('paste-area')?.focus()}
               >
-                <span>📝 텍스트</span>
+                <span>텍스트</span>
                 <span className="tiny muted">붙여넣기</span>
               </button>
             </div>
@@ -195,8 +194,8 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
               텍스트에서 장소 인식
             </button>
 
-            {busy && <div className="banner info" style={{ marginTop: 12 }}>이미지에서 장소명을 인식하는 중이에요…</div>}
-            {error && <div className="banner danger" style={{ marginTop: 12 }}>{error}</div>}
+            {busy && <div className="banner" style={{ marginTop: 12 }}>이미지에서 장소명을 인식하는 중이에요…</div>}
+            {error && <div className="banner alert" style={{ marginTop: 12 }}>{error}</div>}
 
             <div className="section-title">인식 결과 {candidates.length > 0 && `(${candidates.length})`}</div>
             {candidates.length === 0 ? (
@@ -208,7 +207,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
                 const linked = c.placeId ? PLACE_MAP[c.placeId] : null
                 return (
                   <div
-                    className={`card${c.excluded ? '' : ''}`}
+                    className="card"
                     key={c.id}
                     style={{ padding: 12, opacity: c.excluded ? 0.5 : 1 }}
                   >
@@ -244,7 +243,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
                       </div>
                     </div>
                     {c.status === 'ambiguous' && !c.excluded && (
-                      <div className="banner warn" style={{ marginTop: 8 }}>
+                      <div className="banner alert" style={{ marginTop: 8 }}>
                         인식 결과가 확실하지 않아요. 연결된 장소가 맞는지 확인해주세요.
                       </div>
                     )}
@@ -256,7 +255,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
         )}
       </div>
 
-      <div style={{ padding: '10px 14px calc(14px + var(--safe-b))', borderTop: '1px solid var(--line)', background: 'var(--surface)' }}>
+      <div style={{ padding: '10px 14px calc(14px + var(--safe-b))', borderTop: '1px solid var(--border)', background: 'var(--canvas)' }}>
         <button className="btn primary block" disabled={chosen.length === 0} onClick={onAdd}>
           선택한 {chosen.length}곳 코스에 추가
         </button>
@@ -266,11 +265,8 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
         open={!!relinkFor}
         onClose={() => setRelinkFor(null)}
       >
-        <div className="bold" style={{ fontSize: 16, marginBottom: 10 }}>
-          연결할 장소 선택
-        </div>
+        <div className="modal-title">연결할 장소 선택</div>
         <div className="searchbar" style={{ marginBottom: 12 }}>
-          <span>🔍</span>
           <input value={relinkQuery} onChange={(e) => setRelinkQuery(e.target.value)} placeholder="장소명 검색" />
         </div>
         <div className="stack">
@@ -289,7 +285,7 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
               }}
             >
               <div className="list-item">
-                <Thumb tone={place.tone} />
+                <Thumb />
                 <div className="body">
                   <div className="name truncate">{place.name}</div>
                   <div className="meta truncate">
@@ -307,11 +303,9 @@ export default function ImportScreen({ courseId }: { courseId?: string }) {
       </Modal>
 
       <Modal open={dupOpen} onClose={() => setDupOpen(false)} center>
-        <div className="bold" style={{ fontSize: 16, marginBottom: 6 }}>
-          이미 코스에 있는 장소가 있어요
-        </div>
+        <div className="modal-title">이미 코스에 있는 장소가 있어요</div>
         <div className="small muted" style={{ marginBottom: 14 }}>
-          {duplicates.map((id) => PLACE_MAP[id]?.name).join(', ')} — 그대로 추가하면 같은 장소가 두 번 들어가요.
+          {duplicates.map((id) => PLACE_MAP[id]?.name).join(', ')} · 그대로 추가하면 같은 장소가 두 번 들어가요.
         </div>
         <div className="row">
           <button className="btn" onClick={() => setDupOpen(false)}>

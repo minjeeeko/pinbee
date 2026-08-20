@@ -16,8 +16,6 @@ export interface Place {
   category: Category
   lat: number
   lng: number
-  /** 대표 이미지 대신 사용하는 색상 썸네일 힌트 */
-  tone: string
   hours?: OpenHours
   desc?: string
 }

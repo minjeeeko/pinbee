@@ -23,7 +23,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="screen">
         <AppBar title="코스 저장" onBack={goBack} />
-        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+        <Empty title="코스를 찾을 수 없어요" />
       </div>
     )
   }
@@ -66,7 +66,11 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       <AppBar
         title="코스 저장"
         onBack={goBack}
-        right={<span className="pill">{course.places.length}곳 · {fmtDuration(stats.total)}</span>}
+        right={
+          <span className="pill">
+            {course.places.length}곳 · {fmtDuration(stats.total)}
+          </span>
+        }
       />
 
       <div className="scroll pad">
@@ -119,15 +123,15 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
                   key={cp.uid}
                   onClick={() => store.updateCourse(course.id, { coverPlaceId: cp.placeId })}
                   style={{
-                    border: on ? '2px solid var(--ink)' : '1px solid var(--line)',
-                    borderRadius: 12,
-                    padding: 4,
-                    background: 'var(--surface)',
+                    border: `1px solid ${on ? 'var(--ink)' : 'var(--border)'}`,
+                    borderRadius: 16,
+                    padding: 6,
+                    background: 'var(--canvas)',
                     flex: 'none',
                   }}
                 >
-                  <Thumb tone={p?.tone ?? '#ddd'} size="lg" />
-                  <div className="tiny truncate" style={{ width: 62, marginTop: 4 }}>
+                  <Thumb size="lg" />
+                  <div className="tiny truncate" style={{ width: 60, marginTop: 4 }}>
                     {p?.name}
                   </div>
                 </button>
@@ -175,7 +179,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
           )}
         </div>
 
-        {saveError && <div className="banner danger" style={{ marginBottom: 12 }}>{saveError}</div>}
+        {saveError && <div className="banner alert" style={{ marginBottom: 12 }}>{saveError}</div>}
 
         <button className="btn primary block" onClick={save}>
           저장
@@ -184,7 +188,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
           {store.user ? `${store.user.name}님 계정에 저장돼요` : '저장에는 로그인이 필요해요 · 이메일 / 소셜 로그인'}
         </div>
 
-        <button className="btn danger block" style={{ marginTop: 18 }} onClick={() => {
+        <button className="btn outline block" style={{ marginTop: 18 }} onClick={() => {
           store.deleteCourse(course.id)
           store.toast('코스를 삭제했어요')
           navigate('/')
@@ -194,9 +198,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       </div>
 
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} center>
-        <div className="bold" style={{ fontSize: 16, marginBottom: 6 }}>
-          로그인이 필요해요
-        </div>
+        <div className="modal-title">로그인이 필요해요</div>
         <div className="small muted" style={{ marginBottom: 14 }}>
           코스를 저장하고 내 계정에서 다시 열어보려면 로그인해주세요. 편집 중인 내용은 그대로 유지돼요.
         </div>

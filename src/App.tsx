@@ -19,25 +19,11 @@ import LoginScreen from './screens/LoginScreen'
 import AdminScreen from './screens/AdminScreen'
 
 const TABS = [
-  { key: '', label: '내 코스', icon: '🗺' },
-  { key: 'explore', label: '탐색', icon: '🔍' },
-  { key: 'saved', label: '저장 장소', icon: '📍' },
-  { key: 'me', label: '내 정보', icon: '👤' },
+  { key: '', label: '내 코스' },
+  { key: 'explore', label: '탐색' },
+  { key: 'saved', label: '저장 장소' },
+  { key: 'me', label: '내 정보' },
 ]
-
-function StatusBar() {
-  return (
-    <div className="statusbar">
-      <span>9:41</span>
-      <span className="dots">
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-    </div>
-  )
-}
 
 export default function App() {
   const route = useRoute()
@@ -100,7 +86,6 @@ export default function App() {
   return (
     <div className="phone-wrap">
       <div className="phone">
-        <StatusBar />
         {render()}
         {isTab && (
           <nav className="tabbar">
@@ -110,7 +95,6 @@ export default function App() {
                 className={tabKey === t.key ? 'on' : ''}
                 onClick={() => navigate('/' + t.key)}
               >
-                <span className="ic">{t.icon}</span>
                 {t.label}
               </button>
             ))}

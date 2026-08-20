@@ -28,7 +28,6 @@ export default function HomeScreen() {
       <div className="screen">
         <div className="scroll pad">
           <Empty
-            icon="🗺"
             title="편집 중인 코스가 없어요"
             desc="새 코스를 만들어 장소를 추가해보세요."
             action={
@@ -61,27 +60,25 @@ export default function HomeScreen() {
           activeIndex={null}
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
           seed={11}
-          insetTop={62}
+          insetTop={70}
+          toolsTop={72}
           insetBottom={Math.round(window.innerHeight * sheetFraction)}
         />
 
         <div className="map-float" style={{ top: 10 }}>
           <button className="searchbar" style={{ flex: 1 }} onClick={() => navigate('/search/' + course.id)}>
-            <span>🔍</span>
-            <span className="muted" style={{ flex: 1, textAlign: 'left' }}>
-              장소·지역 검색
-            </span>
+            <span className="placeholder">장소·지역 검색</span>
           </button>
-          <button className="iconbtn" style={{ width: 48, height: 48, borderRadius: 14 }} onClick={() => setAddOpen(true)}>
-            +
+          <button className="btn sm primary" style={{ flex: 'none' }} onClick={() => setAddOpen(true)}>
+            추가
           </button>
         </div>
 
         <div className="map-float" style={{ bottom: 12, right: 'auto' }}>
-          <button className={`chip${showRoute ? ' on' : ''}`} onClick={() => setShowRoute((v) => !v)}>
+          <button className={`chip sm${showRoute ? ' on' : ' outline'}`} onClick={() => setShowRoute((v) => !v)}>
             동선 보기
           </button>
-          <button className={`chip${showTimes ? ' on' : ''}`} onClick={() => setShowTimes((v) => !v)}>
+          <button className={`chip sm${showTimes ? ' on' : ' outline'}`} onClick={() => setShowTimes((v) => !v)}>
             구간 시간
           </button>
         </div>
@@ -93,7 +90,7 @@ export default function HomeScreen() {
             <div style={{ padding: '2px 16px 8px' }}>
               <div className="between">
                 <div style={{ minWidth: 0 }}>
-                  <div className="bold truncate" style={{ fontSize: 17 }}>
+                  <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
                     {course.title || '이름 없는 코스'}
                   </div>
                   <div className="tiny muted">
@@ -109,7 +106,6 @@ export default function HomeScreen() {
         >
           {course.places.length === 0 ? (
             <Empty
-              icon="📍"
               title="아직 추가한 장소가 없어요"
               desc="검색하거나 저장 장소에서 불러와 코스를 시작하세요."
               action={
@@ -121,7 +117,7 @@ export default function HomeScreen() {
           ) : (
             <>
               {stats.uncomputable.length > 0 && (
-                <div className="banner danger" style={{ marginBottom: 10 }}>
+                <div className="banner alert" style={{ marginBottom: 10 }}>
                   <div className="t">경로를 계산할 수 없는 구간이 {stats.uncomputable.length}개 있어요</div>
                   구간의 이동수단을 바꾸면 다시 계산할 수 있어요.
                 </div>
@@ -148,8 +144,8 @@ export default function HomeScreen() {
                               {cp.memo ? ` · 메모 있음` : ''}
                             </div>
                           </div>
-                          <Thumb tone={place?.tone ?? '#ddd'} />
-                          <span {...handle}>⠿</span>
+                          <Thumb />
+                          <span {...handle}>순서</span>
                         </div>
                       </div>
                       {leg && (
@@ -197,9 +193,7 @@ export default function HomeScreen() {
       />
 
       <Modal open={addOpen} onClose={() => setAddOpen(false)}>
-        <div className="bold" style={{ fontSize: 17, marginBottom: 12 }}>
-          장소 추가
-        </div>
+        <div className="modal-title">장소 추가</div>
         <div className="stack">
           <button
             className="btn block"
@@ -208,7 +202,7 @@ export default function HomeScreen() {
               navigate('/search/' + course.id)
             }}
           >
-            🔍 장소 검색으로 추가
+            장소 검색으로 추가
           </button>
           <button
             className="btn block"
@@ -217,7 +211,7 @@ export default function HomeScreen() {
               navigate('/import/' + course.id)
             }}
           >
-            📥 저장 장소·이미지·텍스트 불러오기
+            저장 장소·이미지·텍스트 불러오기
           </button>
           <button
             className="btn block"
@@ -226,14 +220,14 @@ export default function HomeScreen() {
               navigate('/prefs/' + course.id)
             }}
           >
-            ⚙️ 선호 조건으로 코스 점검
+            선호 조건으로 코스 점검
           </button>
         </div>
       </Modal>
 
       <Modal open={pickerOpen} onClose={() => setPickerOpen(false)}>
         <div className="between" style={{ marginBottom: 12 }}>
-          <div className="bold" style={{ fontSize: 17 }}>
+          <div className="modal-title" style={{ marginBottom: 0 }}>
             내 코스
           </div>
           <button
@@ -251,8 +245,7 @@ export default function HomeScreen() {
           {store.myCourses.map((c) => (
             <div
               key={c.id}
-              className={`card tap${c.id === course.id ? '' : ''}`}
-              style={{ borderColor: c.id === course.id ? 'var(--ink)' : undefined }}
+              className={`card tap${c.id === course.id ? ' selected' : ''}`}
               onClick={() => {
                 store.setDraftId(c.id)
                 setPickerOpen(false)
@@ -260,7 +253,9 @@ export default function HomeScreen() {
             >
               <div className="between">
                 <div className="bold truncate">{c.title || '이름 없는 코스'}</div>
-                <span className={`pill ${c.visibility}`}>{c.visibility === 'public' ? '공개' : '비공개'}</span>
+                <span className={`pill${c.visibility === 'public' ? ' dark' : ''}`}>
+                  {c.visibility === 'public' ? '공개' : '비공개'}
+                </span>
               </div>
               <div className="tiny muted">{c.places.length}곳 · {fmtDuration(courseStats(c).total)}</div>
             </div>

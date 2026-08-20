@@ -17,7 +17,7 @@ export default function AdminScreen() {
       <AppBar title="신고 관리" sub="관리자 검토 목록" onBack={goBack} />
       <div className="scroll pad">
         {store.reports.length === 0 ? (
-          <Empty icon="🛡" title="접수된 신고가 없어요" desc="공개 코스 상세에서 신고하면 여기에 쌓여요." />
+          <Empty title="접수된 신고가 없어요" desc="공개 코스 상세에서 신고하면 여기에 쌓여요." />
         ) : (
           store.reports.map((r) => {
             const course = store.getCourse(r.courseId)
@@ -51,7 +51,7 @@ export default function AdminScreen() {
                       숨김
                     </button>
                     <button
-                      className="btn xs danger"
+                      className="btn xs"
                       onClick={() => {
                         store.resolveReport(r.id, 'deleted')
                         store.toast('코스를 삭제했어요')

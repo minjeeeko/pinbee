@@ -42,7 +42,7 @@ export function Switch({ on, onChange }: { on: boolean; onChange: (v: boolean) =
 }
 
 export function Checkbox({ on }: { on: boolean }) {
-  return <span className={`checkbox${on ? ' on' : ''}`}>✓</span>
+  return <span className={`checkbox${on ? ' on' : ''}`} />
 }
 
 export function Stepper({
@@ -62,12 +62,12 @@ export function Stepper({
 }) {
   return (
     <span className="stepper">
-      <button onClick={() => onChange(Math.max(min, value - step))} aria-label="줄이기">
-        −
+      <button onClick={() => onChange(Math.max(min, value - step))} disabled={value <= min}>
+        -{step}
       </button>
       <span>{format ? format(value) : value}</span>
-      <button onClick={() => onChange(Math.min(max, value + step))} aria-label="늘리기">
-        +
+      <button onClick={() => onChange(Math.min(max, value + step))} disabled={value >= max}>
+        +{step}
       </button>
     </span>
   )
@@ -78,21 +78,23 @@ export function AppBar({
   sub,
   onBack,
   right,
+  hero = false,
 }: {
   title: React.ReactNode
   sub?: React.ReactNode
   onBack?: () => void
   right?: React.ReactNode
+  hero?: boolean
 }) {
   return (
     <div className="appbar">
       {onBack && (
-        <button className="iconbtn" onClick={onBack} aria-label="뒤로">
-          ‹
+        <button className="textbtn" onClick={onBack}>
+          뒤로
         </button>
       )}
       <div style={{ minWidth: 0 }}>
-        <h1 className="truncate">{title}</h1>
+        <h1 className={`truncate${hero ? ' hero' : ''}`}>{title}</h1>
         {sub && <div className="sub truncate">{sub}</div>}
       </div>
       <div className="spacer" />
@@ -101,10 +103,9 @@ export function AppBar({
   )
 }
 
-export function Empty({ icon, title, desc, action }: { icon: string; title: string; desc?: string; action?: React.ReactNode }) {
+export function Empty({ title, desc, action }: { title: string; desc?: string; action?: React.ReactNode }) {
   return (
     <div className="empty">
-      <div className="big">{icon}</div>
       <div className="t">{title}</div>
       {desc && <div className="tiny">{desc}</div>}
       {action && <div style={{ marginTop: 14 }}>{action}</div>}
@@ -112,6 +113,7 @@ export function Empty({ icon, title, desc, action }: { icon: string; title: stri
   )
 }
 
-export function Thumb({ tone, size = '' }: { tone: string; size?: string }) {
-  return <span className={`thumb ${size}`} style={{ background: tone }} />
+/** 장소 대표 이미지 자리 (프로토타입에서는 회색 플레이스홀더) */
+export function Thumb({ size = '' }: { size?: string }) {
+  return <span className={`thumb ${size}`} />
 }

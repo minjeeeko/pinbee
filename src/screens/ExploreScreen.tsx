@@ -37,19 +37,22 @@ export default function ExploreScreen() {
 
   return (
     <div className="screen">
-      <div className="appbar">
+      <div className="appbar" style={{ paddingBottom: 0 }}>
+        <h1 className="hero">탐색</h1>
+      </div>
+
+      <div className="appbar" style={{ paddingTop: 12 }}>
         <div className="searchbar" style={{ flex: 1 }}>
-          <span>🔍</span>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="공개 코스 검색 · 코스명, 지역" />
           {q && (
-            <button className="muted" onClick={() => setQ('')} aria-label="지우기">
-              ✕
+            <button className="textbtn" onClick={() => setQ('')}>
+              지우기
             </button>
           )}
         </div>
       </div>
 
-      <div style={{ padding: '0 14px' }}>
+      <div style={{ padding: '0 20px' }}>
         <div className="chips" style={{ marginBottom: 6 }}>
           <span className="tiny muted chips-label">
             지역
@@ -98,7 +101,6 @@ export default function ExploreScreen() {
 
         {results.length === 0 ? (
           <Empty
-            icon="🧭"
             title="조건에 맞는 공개 코스가 없어요"
             desc="지역이나 테마 조건을 바꾸면 더 많은 코스를 볼 수 있어요."
             action={

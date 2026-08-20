@@ -21,7 +21,7 @@ export default function LoginScreen() {
     <div className="screen">
       <AppBar title="로그인" onBack={goBack} />
       <div className="scroll pad">
-        <div className="banner info" style={{ marginBottom: 16 }}>
+        <div className="banner" style={{ marginBottom: 16 }}>
           프로토타입이라 실제 인증 없이 세션만 만들어요. 어떤 이메일이든 로그인됩니다.
         </div>
 
@@ -37,10 +37,16 @@ export default function LoginScreen() {
         </label>
         <label className="field">
           <span className="label">비밀번호</span>
-          <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} placeholder="••••••" />
+          <input
+            className="input"
+            type="password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            placeholder="비밀번호 입력"
+          />
         </label>
 
-        {error && <div className="banner danger" style={{ marginBottom: 12 }}>{error}</div>}
+        {error && <div className="banner alert" style={{ marginBottom: 12 }}>{error}</div>}
 
         <button
           className="btn primary block"

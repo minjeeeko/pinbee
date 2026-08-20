@@ -22,12 +22,6 @@ export const TRANSPORT_LABEL: Record<Transport, string> = {
   car: '자동차',
 }
 
-export const TRANSPORT_ICON: Record<Transport, string> = {
-  walk: '🚶',
-  transit: '🚈',
-  car: '🚗',
-}
-
 /** 도보로 이 거리를 넘어서면 경로 계산 불가로 간주 */
 export const WALK_LIMIT_KM = 5
 

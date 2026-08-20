@@ -3,7 +3,7 @@ import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { fmtDuration, fmtTime } from '../lib/schedule'
-import { TRANSPORT_ICON, TRANSPORT_LABEL } from '../lib/geo'
+import { TRANSPORT_LABEL } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
@@ -25,7 +25,6 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
       <div className="screen">
         <AppBar title="코스 상세" onBack={goBack} />
         <Empty
-          icon="🔒"
           title="지금은 볼 수 없는 코스예요"
           desc="비공개로 전환되었거나 관리자에 의해 숨김 처리된 코스입니다."
           action={
@@ -71,16 +70,16 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         }
       />
 
-      <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 14px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--line)' }}>
+      <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas places={stats.places} showRoute legs={stats.legs} seed={13} />
       </div>
 
       <div className="scroll pad" style={{ marginTop: 12 }}>
         <div className="flexrow" style={{ gap: 6, marginBottom: 8 }}>
-          <span className="pill public">공개</span>
+          <span className="pill dark">공개</span>
           <span className="pill">읽기 전용</span>
         </div>
-        <div className="bold" style={{ fontSize: 18 }}>
+        <div className="bold" style={{ fontSize: 17, lineHeight: '27px' }}>
           {course.title}
         </div>
         <div className="tiny muted" style={{ marginTop: 4 }}>
@@ -89,7 +88,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
           {fmtDuration(stats.total)}
         </div>
         {course.description && (
-          <div className="small" style={{ marginTop: 10, color: 'var(--ink-2)' }}>
+          <div className="small" style={{ marginTop: 10, color: 'var(--fg)' }}>
             {course.description}
           </div>
         )}
@@ -108,7 +107,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
                     <div className="between">
                       <span className="name truncate">{place?.name}</span>
                       <span className="tiny bold">
-                        {fmtTime(item?.arrive ?? null)}–{fmtTime(item?.leave ?? null)}
+                        {fmtTime(item?.arrive ?? null)} - {fmtTime(item?.leave ?? null)}
                       </span>
                     </div>
                     <div className="meta truncate">
@@ -116,13 +115,13 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
                       {cp.memo ? ` · ${cp.memo}` : ''}
                     </div>
                   </div>
-                  <Thumb tone={place?.tone ?? '#ddd'} />
+                  <Thumb />
                 </div>
               </div>
               {leg && (
                 <div className={`leg${leg.minutes === null ? ' error' : ''}`}>
                   <span className="seg-btn">
-                    {TRANSPORT_ICON[leg.transport]} {TRANSPORT_LABEL[leg.transport]}{' '}
+                    {TRANSPORT_LABEL[leg.transport]}{' '}
                     {leg.minutes === null ? '계산 불가' : `${leg.minutes}분`}
                   </span>
                 </div>
@@ -137,9 +136,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
       </div>
 
       <Modal open={reportOpen} onClose={() => setReportOpen(false)}>
-        <div className="bold" style={{ fontSize: 16, marginBottom: 12 }}>
-          이 코스를 신고할게요
-        </div>
+        <div className="modal-title">이 코스를 신고할게요</div>
         <div className="stack" style={{ marginBottom: 14 }}>
           {REASONS.map((r) => (
             <button
@@ -156,7 +153,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
             취소
           </button>
           <button
-            className="btn accent"
+            className="btn primary"
             onClick={() => {
               const res = store.addReport(course.id, reason)
               store.toast(res === 'duplicate' ? '이미 접수된 신고가 검토 중이에요' : '신고가 접수되었어요')

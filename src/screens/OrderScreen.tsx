@@ -34,7 +34,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="screen">
         <AppBar title="순서 정하기" onBack={goBack} />
-        <Empty icon="🔍" title="코스를 찾을 수 없어요" />
+        <Empty title="코스를 찾을 수 없어요" />
       </div>
     )
   }
@@ -43,7 +43,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
     <div className="screen">
       <AppBar title="순서 정하기" sub="변경한 동선은 자동 저장돼요" onBack={goBack} />
 
-      <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 14px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--line)' }}>
+      <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas
           places={stats.places}
           showRoute
@@ -60,7 +60,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
             이동 {fmtDuration(stats.travel)} · 체류 {fmtDuration(stats.stay)}
           </span>
           <button className="btn xs" onClick={() => setSuggestOpen(true)}>
-            ✨ 가까운 순서로 제안
+            순서 제안 받기
           </button>
         </div>
 
@@ -77,21 +77,21 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
             return (
               <div>
                 <div
-                  className={`card${active === i || dragging ? ' ' : ''}`}
-                  style={{ padding: 12, borderColor: active === i ? 'var(--accent)' : undefined }}
+                  className={`card${active === i || dragging ? ' selected' : ''}`}
+                  style={{ padding: 12 }}
                   onClick={() => setActive(i)}
                 >
                   <div className="list-item">
-                    <span className={`num${active === i ? ' accent' : ''}`}>{i + 1}</span>
+                    <span className={`num${active === i ? '' : ' ghost'}`}>{i + 1}</span>
                     <div className="body">
                       <div className="name truncate">{place?.name}</div>
                       <div className="meta truncate">
                         {place?.region} · {place?.category} · 체류 {fmtDuration(cp.stayMinutes)}
                       </div>
                     </div>
-                    <Thumb tone={place?.tone ?? '#ddd'} />
+                    <Thumb />
                     <button
-                      className="btn xs danger"
+                      className="btn xs"
                       onClick={(e) => {
                         e.stopPropagation()
                         store.removePlaceFromCourse(course.id, cp.uid)
@@ -99,7 +99,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                     >
                       삭제
                     </button>
-                    <span {...handle}>⠿</span>
+                    <span {...handle}>순서</span>
                   </div>
                 </div>
                 {leg && <LegRow leg={leg} onChangeTransport={(t) => store.setLegTransport(course.id, i, t)} />}
@@ -114,7 +114,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
 
         <div className="row">
           <button className="btn" onClick={() => navigate('/search/' + course.id)}>
-            + 장소 추가
+            장소 추가
           </button>
           <button className="btn primary" onClick={() => navigate('/summary/' + course.id)}>
             동선 확인
@@ -123,11 +123,9 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
       </div>
 
       <Modal open={suggestOpen} onClose={() => setSuggestOpen(false)}>
-        <div className="bold" style={{ fontSize: 17, marginBottom: 10 }}>
-          이동시간이 짧아지는 순서 제안
-        </div>
+        <div className="modal-title">이동시간이 짧아지는 순서 제안</div>
         {!suggestion || suggestion.same ? (
-          <div className="banner info" style={{ marginBottom: 14 }}>
+          <div className="banner" style={{ marginBottom: 14 }}>
             지금보다 이동시간이 짧아지는 대안을 찾지 못했어요. 기존 순서를 유지할게요.
           </div>
         ) : (
