@@ -15,6 +15,7 @@ import MeScreen from './screens/MeScreen'
 import PrefsScreen from './screens/PrefsScreen'
 import LoginScreen from './screens/LoginScreen'
 import AdminScreen from './screens/AdminScreen'
+import OnboardingScreen from './screens/OnboardingScreen'
 
 const TABS = [
   { key: '', label: '내 코스' },
@@ -38,6 +39,13 @@ export default function App() {
     if (editRoutes.includes(head) && param && param !== store.draftId) store.setDraftId(param)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [head, param])
+
+  // 로그인은 했는데 선호 조건(온보딩)을 아직 저장한 적 없으면 온보딩으로 보낸다
+  useEffect(() => {
+    if (store.user && store.onboarded === false && head !== 'onboarding') {
+      navigate('/onboarding', true)
+    }
+  }, [store.user, store.onboarded, head])
 
   const tabKey = head ?? ''
   const isTab = TABS.some((t) => t.key === tabKey) && !param
@@ -70,6 +78,8 @@ export default function App() {
         return <PublicCourseScreen token={param} />
       case 'login':
         return <LoginScreen />
+      case 'onboarding':
+        return <OnboardingScreen />
       case 'admin':
         return <AdminScreen />
       default:

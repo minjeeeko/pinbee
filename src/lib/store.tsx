@@ -1,13 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
-import { DEFAULT_PREFS, SEED_COURSES } from '../data/seed'
+import { DEFAULT_PREFS } from '../data/seed'
 import { PLACE_MAP } from '../data/places'
 import { haversineKm, suggestTransport } from './geo'
 import { supabase, isSupabaseConfigured } from './supabase'
 import * as db from './db'
 import { isSavedCourseId } from './db'
 
-const LOCAL_KEY = 'pinbee.local.v2'
+const LOCAL_KEY = 'routiz.local.v1'
 
 interface Toast {
   id: number
@@ -49,19 +49,6 @@ export function newCourse(authorId: string, authorName: string): Course {
   }
 }
 
-function demoDraft(): Course {
-  const draft = newCourse('guest', '게스트')
-  draft.title = '연남 → 한강 데이트'
-  draft.theme = '데이트'
-  draft.startTime = '11:00'
-  draft.places = [
-    { uid: uid('cp'), placeId: 'p-yn-brunch', stayMinutes: 60, memo: '', transportToNext: 'walk' },
-    { uid: uid('cp'), placeId: 'p-yn-gallery', stayMinutes: 50, memo: '', transportToNext: 'transit' },
-    { uid: uid('cp'), placeId: 'p-hd-rooftop', stayMinutes: 60, memo: '', transportToNext: 'walk' },
-  ]
-  return draft
-}
-
 function loadLocalState(): LocalState {
   const raw = localStorage.getItem(LOCAL_KEY)
   if (raw) {
@@ -74,13 +61,15 @@ function loadLocalState(): LocalState {
       /* 손상된 저장 데이터는 초기값으로 대체 */
     }
   }
-  const draft = demoDraft()
+  const draft = newCourse('guest', '게스트')
   return { localCourses: [draft], draftId: draft.id }
 }
 
 interface State {
   user: User | null
   authLoading: boolean
+  /** 로그인한 사용자가 선호 조건(온보딩)을 아직 한 번도 저장하지 않았으면 false, 저장했으면 true, 모르면 null */
+  onboarded: boolean | null
   courses: Course[]
   savedPlaces: SavedPlace[]
   reports: Report[]
@@ -122,7 +111,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<State>(() => ({
     user: null,
     authLoading: isSupabaseConfigured,
-    courses: isSupabaseConfigured ? local.current.localCourses : [...SEED_COURSES, ...local.current.localCourses],
+    onboarded: null,
+    courses: local.current.localCourses,
     savedPlaces: [],
     reports: [],
     prefs: DEFAULT_PREFS,
@@ -148,7 +138,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const authUser = session?.user
       if (!authUser) {
-        setState((s) => ({ ...s, user: null, authLoading: false, savedPlaces: [], reports: [], prefs: DEFAULT_PREFS }))
+        setState((s) => ({ ...s, user: null, authLoading: false, onboarded: null, savedPlaces: [], reports: [], prefs: DEFAULT_PREFS }))
         return
       }
       try {
@@ -184,7 +174,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         /* 관리자가 아니면 RLS로 조회가 제한될 뿐이라 조용히 무시 */
       })
     db.fetchPreferences(userId)
-      .then((prefs) => prefs && setState((s) => (s.user?.id === userId ? { ...s, prefs } : s)))
+      .then((prefs) =>
+        setState((s) => (s.user?.id === userId ? { ...s, prefs: prefs ?? s.prefs, onboarded: prefs !== null } : s)),
+      )
       .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.user?.id])
@@ -352,7 +344,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         db.updateSavedPlaceMemo(placeId, memo).catch(() => toast('메모 저장에 실패했어요'))
       },
       setPrefs: (p) => {
-        setState((s) => ({ ...s, prefs: p }))
+        setState((s) => ({ ...s, prefs: p, onboarded: state.user ? true : s.onboarded }))
         if (state.user) {
           db.upsertPreferences(state.user.id, p).catch(() => toast('선호 조건 저장에 실패했어요'))
         }
