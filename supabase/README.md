@@ -1,0 +1,55 @@
+# Supabase 연동
+
+## 실행 순서
+
+1. Supabase 프로젝트를 만든다.
+2. 프로젝트 대시보드 **SQL Editor**에서 `schema.sql` 전체를 붙여넣고 실행한다. (테이블 · 트리거 · RLS 정책이 한 번에 생성됩니다)
+3. (선택) `seed.sql`은 장소 40곳을 채워주는 부분은 그대로 실행하면 되고, 데모 공개 코스·저장 장소 부분은
+   먼저 이메일/비밀번호로 회원가입을 한 번 한 뒤 `00000000-0000-0000-0000-000000000000`를
+   `select id from auth.users where email = '가입한 이메일';`로 얻은 실제 UUID로 전부 바꿔서 실행한다.
+   (장소 데이터만 있어도 앱은 정상 동작하므로 이 부분은 건너뛰어도 됩니다.)
+4. **Authentication > Providers**에서 Email만 켜져 있으면 됩니다 (카카오·구글 등 소셜 로그인은 추가하지 않습니다).
+5. **Authentication > Settings**에서 "Confirm email"을 끄면 회원가입 즉시 로그인되고,
+   켜두면 이메일 인증 링크를 눌러야 로그인할 수 있습니다. 프로토타입 단계에서는 꺼두는 걸 추천합니다.
+
+## 스키마 요약
+
+| 테이블 | 역할 |
+|---|---|
+| `profiles` | `auth.users` 확장 — 이름, 관리자 여부. 회원가입 시 트리거로 자동 생성 |
+| `places` | 내장 장소 40곳 (읽기 전용 참조 데이터) |
+| `courses` | 코스 (내 코스 · 공개 코스 공용) |
+| `course_places` | 코스에 담긴 장소, `position` 컬럼으로 순서 관리 |
+| `saved_places` | 사용자별 저장 장소 + 개인 메모 |
+| `reports` | 공개 코스 신고. 같은 사람이 같은 코스를 중복으로 대기중 신고할 수 없음 (DB 유니크 인덱스) |
+| `preferences` | 사용자별 선호 조건 |
+
+기존 TypeScript `Course` 타입의 `authorName`은 DB에 따로 저장하지 않고 `profiles.name`을 조인해서 씁니다
+(불러올 때 `courses.select('*, profiles(name)')` 형태). 이름이 바뀌면 지난 코스에도 최신 이름이 그대로 반영됩니다.
+
+## RLS 요약
+
+- **공개 코스**는 로그인 여부와 상관없이 누구나 볼 수 있고, **비공개 코스**는 작성자 본인과 관리자만 볼 수 있습니다.
+- 코스·코스 장소·저장 장소·선호 조건은 전부 **본인 것만** 쓰고 지울 수 있습니다.
+- `hidden`(관리자 숨김 처리) 플래그는 본인이 직접 못 바꾸고 **관리자만** 바꿀 수 있게 트리거로 막아뒀습니다.
+- `profiles.is_admin`도 같은 방식으로 본인 셀프 승격을 막았습니다. 최초 관리자는 SQL Editor에서
+  ```sql
+  update public.profiles set is_admin = true where id = '내_UUID';
+  ```
+  로 직접 지정하면 됩니다 (SQL Editor는 로그인 세션이 아니라서 이 트리거에 걸리지 않습니다).
+- `places`는 읽기 전용 참조 데이터라 일반 사용자는 조회만 가능하고, 쓰기는 막혀 있습니다
+  (필요하면 서비스 키로만 추가/수정하세요).
+
+로컬에서 PostgreSQL 16 + `auth` 스키마를 흉내 낸 환경에 이 스키마와 RLS를 실제로 적용해
+소유권 경계·관리자 승격 차단·중복 신고 차단·저장 장소 격리까지 직접 테스트해서 검증했습니다.
+
+## 다음 단계 (아직 안 함)
+
+지금은 스키마와 RLS만 준비된 상태고, 앱 코드(`src/lib/store.tsx`)는 여전히 `localStorage`를 씁니다.
+실제 연동을 진행하려면:
+
+1. `@supabase/supabase-js` 설치, `src/lib/supabase.ts`에 클라이언트 생성 (URL·anon key는 `.env.local`)
+2. `LoginScreen`을 회원가입/로그인 두 흐름으로 나누고 카카오·구글 버튼 제거, `supabase.auth.signUp` / `signInWithPassword` 연결
+3. `store.tsx`의 각 액션을 Supabase 쿼리로 교체 (비동기 로딩·에러 상태 추가 필요)
+
+원하시면 이어서 진행할게요.
