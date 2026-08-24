@@ -16,6 +16,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
   const [copied, setCopied] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [saving, setSaving] = useState(false)
   const stats = useMemo(() => (course ? courseStats(course) : null), [course])
 
   if (!course || !stats) {
@@ -45,7 +46,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
     store.toast('링크가 복사되었습니다')
   }
 
-  const save = () => {
+  const save = async () => {
     if (!store.user) {
       setLoginOpen(true)
       return
@@ -55,7 +56,13 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       return
     }
     setSaveError('')
-    store.updateCourse(course.id, { authorId: store.user.id, authorName: store.user.name, saved: true })
+    setSaving(true)
+    const result = await store.saveCourse(course.id)
+    setSaving(false)
+    if (!result.ok) {
+      setSaveError(result.error)
+      return
+    }
     store.toast('코스를 저장했어요')
     navigate('/me')
   }
@@ -176,8 +183,8 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
 
         {saveError && <div className="banner alert" style={{ marginBottom: 12 }}>{saveError}</div>}
 
-        <button className="btn primary block" onClick={save}>
-          저장
+        <button className="btn primary block" disabled={saving} onClick={save}>
+          {saving ? '저장 중…' : '저장'}
         </button>
         <div className="tiny muted" style={{ textAlign: 'center', marginTop: 10 }}>
           {store.user ? `${store.user.name}님 계정에 저장돼요` : '저장에는 로그인이 필요해요 · 이메일 / 소셜 로그인'}

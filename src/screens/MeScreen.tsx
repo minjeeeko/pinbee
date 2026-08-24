@@ -19,9 +19,7 @@ export default function MeScreen() {
             <div className="between">
               <div>
                 <div className="bold">{store.user.name}</div>
-                <div className="tiny muted">
-                  {store.user.email} · {store.user.provider === 'email' ? '이메일' : store.user.provider} 로그인
-                </div>
+                <div className="tiny muted">{store.user.email} · 이메일 로그인</div>
               </div>
               <button className="btn xs" onClick={() => store.logout()}>
                 로그아웃

@@ -43,13 +43,21 @@
 로컬에서 PostgreSQL 16 + `auth` 스키마를 흉내 낸 환경에 이 스키마와 RLS를 실제로 적용해
 소유권 경계·관리자 승격 차단·중복 신고 차단·저장 장소 격리까지 직접 테스트해서 검증했습니다.
 
-## 다음 단계 (아직 안 함)
+## 앱 연동 상태
 
-지금은 스키마와 RLS만 준비된 상태고, 앱 코드(`src/lib/store.tsx`)는 여전히 `localStorage`를 씁니다.
-실제 연동을 진행하려면:
+`@supabase/supabase-js`가 붙어 있고, `LoginScreen`은 이메일/비밀번호 회원가입·로그인만 지원합니다
+(카카오·구글 없음). `src/lib/store.tsx`는 다음 원칙으로 동작합니다.
 
-1. `@supabase/supabase-js` 설치, `src/lib/supabase.ts`에 클라이언트 생성 (URL·anon key는 `.env.local`)
-2. `LoginScreen`을 회원가입/로그인 두 흐름으로 나누고 카카오·구글 버튼 제거, `supabase.auth.signUp` / `signInWithPassword` 연결
-3. `store.tsx`의 각 액션을 Supabase 쿼리로 교체 (비동기 로딩·에러 상태 추가 필요)
+- **아직 저장 안 한 코스(현재 만들고 있는 초안)**는 로그인 여부와 상관없이 브라우저 로컬(localStorage)에만
+  있습니다. 로그인 없이도 장소를 추가하며 코스를 만들어볼 수 있어요.
+- **"코스 저장" 버튼**을 누르는 순간 로그인이 필요하고, 그 시점에 초안이 Supabase `courses`/`course_places`에
+  실제로 저장됩니다(로컬 임시 id → 진짜 UUID로 바뀝니다). 이후 그 코스를 다시 편집하면 바로 DB에 반영돼요.
+- **저장 장소·신고·선호 조건**은 로그인해야 쓸 수 있고, 전부 Supabase에 저장됩니다.
+- **공개 코스 탐색**은 로그인 없이도 볼 수 있습니다 (RLS가 공개+비숨김 코스는 익명에게도 열어둠).
+- `.env.local`에 `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`가 없으면(`.env.example` 참고) 회원가입·로그인·
+  DB 저장이 전부 비활성화되고, 예전처럼 내장 데모 데이터(`SEED_COURSES`)만 보이는 오프라인 모드로 동작합니다.
 
-원하시면 이어서 진행할게요.
+로컬 PostgreSQL로 스키마·RLS를 검증한 것과 별개로, `@supabase/supabase-js`가 실제로 호출하는
+`auth.*`/`from(table)` 체인을 흉내 낸 가짜 클라이언트로 회원가입 → 코스 저장 → 재로그인 → 장소 편집 →
+저장 장소 메모 → 중복 신고 차단 → 관리자 숨김 처리까지 Playwright로 전체 흐름을 검증했습니다.
+다만 이건 어디까지나 목(mock)이라, **실제 프로젝트 URL·anon key로 한 번은 라이브로 확인하는 걸 추천합니다.**

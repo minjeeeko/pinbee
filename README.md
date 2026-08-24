@@ -7,9 +7,12 @@
 
 ```bash
 npm install
+cp .env.example .env.local   # Supabase URL·anon key 채우기 (supabase/README.md 참고)
 npm run dev      # http://localhost:5173
 npm run build    # 정적 배포용 번들 (dist/)
 ```
+
+`.env.local`을 채우지 않으면 회원가입·로그인·DB 저장 없이 내장 데모 데이터로만 둘러볼 수 있는 오프라인 모드로 뜹니다.
 
 데스크톱 브라우저에서는 가운데 폰 프레임으로, 모바일에서는 전체 화면으로 표시됩니다.
 개발자도구의 모바일 뷰(390×844)로 보면 시안과 가장 가깝습니다.
@@ -30,7 +33,7 @@ npm run build    # 정적 배포용 번들 (dist/)
 | `#/saved` | 저장 장소 목록 — 상단 지도, 카테고리 필터, 카드별 메모 | 1.2 |
 | `#/me` | 내 정보 — 로그인 상태, 내 코스, 설정 | 6.1 |
 | `#/prefs/:id` | 선호 조건 점검 및 조정 제안 | 4.1 |
-| `#/login` | 이메일 / 소셜 로그인 | 6.1 |
+| `#/login` | 이메일 회원가입 / 로그인 | 6.1 |
 | `#/admin` | 신고 관리 — 숨김·삭제·기각 | 6.2 |
 
 ## 디자인
@@ -54,15 +57,16 @@ npm run build    # 정적 배포용 번들 (dist/)
 - **경로·이동거리**: 실제 길찾기 API 대신 하버사인 거리를 사용합니다. 이동수단(도보/대중교통/자동차) 선택은 유지하되, 시간 대신 거리(km) 기준으로 안내합니다. 도보 5km 초과 구간은 **경로 계산 불가**로 처리해 원인과 대안을 안내합니다.
 - **장소 데이터**: 서울 주요 지역 40곳을 좌표·카테고리·영업시간과 함께 내장했습니다.
 - **이미지 인식**: 캡처 이미지 업로드는 OCR을 흉내 내 후보를 반환하고, 텍스트 붙여넣기는 실제로 파싱해 내장 장소와 유사도(dice 계수)로 매칭합니다. 매칭이 불확실하면 직접 연결·제외할 수 있습니다.
-- **인증**: 실제 인증 없이 세션만 만듭니다. 저장 등 개인화 동작에서 로그인을 안내합니다.
-- **저장소**: 모든 상태는 `localStorage`에 저장됩니다. 내 정보 → *프로토타입 데이터 초기화*로 되돌릴 수 있습니다.
+- **인증**: Supabase Auth 이메일/비밀번호 회원가입·로그인입니다(카카오·구글 없음). `.env.local`(`.env.example` 참고)에 `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`가 없으면 회원가입·로그인이 비활성화되고 오프라인 데모 모드로 동작합니다.
+- **저장소**: 실제 저장 데이터는 Supabase Postgres(`supabase/schema.sql`, RLS 포함)에 저장됩니다. 아직 "코스 저장"을 누르지 않은 편집 중인 초안만 로그인 여부와 상관없이 브라우저 `localStorage`에 남아 있다가, 저장하는 순간 로그인한 계정 명의로 DB에 올라갑니다. 내 정보 → *프로토타입 데이터 초기화*는 이 로컬 초안만 지우고 로그아웃합니다(DB에 이미 저장한 코스는 그대로 남습니다). 자세한 내용은 `supabase/README.md` 참고.
 
 ## 구조
 
 ```
 src/
-  lib/        types · geo(투영·경로) · schedule(시각·충돌·순서 제안) · course · store · router
+  lib/        types · geo(투영·경로) · schedule(시각·충돌·순서 제안) · course · store · router · supabase · db(Supabase 쿼리)
   data/       places(장소 40곳) · seed(공개 코스·저장 장소)
-  components/ MapCanvas · BottomSheet · SortableList · 공통 UI
+  components/ MapCanvas · SortableList · 공통 UI
   screens/    화면별 컴포넌트
+supabase/     schema.sql(테이블·RLS) · seed.sql · README.md
 ```

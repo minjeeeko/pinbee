@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
@@ -6,6 +6,9 @@ import { TRANSPORT_LABEL } from '../lib/geo'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
+import { fetchCourseById, fetchCourseByToken } from '../lib/db'
+import { isSupabaseConfigured } from '../lib/supabase'
+import type { Course } from '../lib/types'
 
 const REASONS = ['부적절한 내용', '개인정보 노출', '허위·과장 정보', '광고·스팸', '기타']
 
@@ -13,11 +16,42 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
   const store = useStore()
   const [reportOpen, setReportOpen] = useState(false)
   const [reason, setReason] = useState(REASONS[0])
-  const course = token ? store.getCourseByToken(token) : courseId ? store.getCourse(courseId) : undefined
+  const cached = token ? store.getCourseByToken(token) : courseId ? store.getCourse(courseId) : undefined
+  const [fetched, setFetched] = useState<Course | null>(null)
+  const [checking, setChecking] = useState(!cached && isSupabaseConfigured)
+  const course = cached ?? fetched ?? undefined
   const stats = useMemo(() => (course ? courseStats(course) : null), [course])
 
+  // 공유 링크로 바로 들어온 경우처럼 아직 목록 캐시에 없을 수 있어 직접 한 번 더 조회한다
+  useEffect(() => {
+    if (cached || !isSupabaseConfigured) {
+      setChecking(false)
+      return
+    }
+    setChecking(true)
+    const load = token ? fetchCourseByToken(token) : courseId ? fetchCourseById(courseId) : Promise.resolve(null)
+    load
+      .then(setFetched)
+      .catch(() => {})
+      .finally(() => setChecking(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cached, token, courseId])
+
+  if (checking) {
+    return (
+      <div className="screen">
+        <AppBar title="코스 상세" onBack={goBack} />
+        <div className="scroll pad">
+          <div className="tiny muted" style={{ textAlign: 'center', marginTop: 40 }}>
+            불러오는 중…
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const unavailable =
-    !course || course.hidden || (course.visibility !== 'public' && course.authorId !== (store.user?.id ?? 'u-me'))
+    !course || course.hidden || (course.visibility !== 'public' && course.authorId !== (store.user?.id ?? 'guest'))
 
   if (unavailable || !course || !stats) {
     return (
@@ -36,7 +70,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
     )
   }
 
-  const isMine = course.authorId === (store.user?.id ?? 'u-me')
+  const isMine = course.authorId === (store.user?.id ?? 'guest')
 
   return (
     <div className="screen">
@@ -141,10 +175,10 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
           </button>
           <button
             className="btn primary"
-            onClick={() => {
-              const res = store.addReport(course.id, reason)
-              store.toast(res === 'duplicate' ? '이미 접수된 신고가 검토 중이에요' : '신고가 접수되었어요')
+            onClick={async () => {
               setReportOpen(false)
+              const res = await store.addReport(course.id, reason)
+              store.toast(res === 'duplicate' ? '이미 접수된 신고가 검토 중이에요' : '신고가 접수되었어요')
             }}
           >
             신고하기

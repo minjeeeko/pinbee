@@ -84,7 +84,7 @@ export interface User {
   id: string
   name: string
   email: string
-  provider: 'email' | 'kakao' | 'google'
+  provider: 'email'
   isAdmin?: boolean
 }
 
