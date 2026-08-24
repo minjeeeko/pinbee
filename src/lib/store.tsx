@@ -164,7 +164,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           user: { id: u.id ?? 'u-me', name: u.name, email: u.email, provider: u.provider, isAdmin: u.isAdmin },
         })),
       logout: () => setState((s) => ({ ...s, user: null })),
-      myCourses: state.courses.filter((c) => c.authorId === myId),
+      // 장소를 하나라도 추가해 코스를 "시작"한 경우에만 내 코스 목록에 노출한다
+      myCourses: state.courses.filter((c) => c.authorId === myId && c.places.length > 0),
       publicCourses: state.courses.filter((c) => c.visibility === 'public' && !c.hidden),
       draft: state.courses.find((c) => c.id === state.draftId) ?? null,
       setDraftId: (id) => setState((s) => ({ ...s, draftId: id })),

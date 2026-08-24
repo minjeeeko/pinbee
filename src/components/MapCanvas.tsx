@@ -54,6 +54,7 @@ export default function MapCanvas({
   // 지도 초기화 (컨테이너당 최초 1회)
   useEffect(() => {
     let cancelled = false
+    let ro: ResizeObserver | null = null
     loadNaverMaps()
       .then(() => {
         if (cancelled || !elRef.current || !window.naver?.maps) return
@@ -63,6 +64,20 @@ export default function MapCanvas({
           zoomControl: false,
         })
         setStatus('ready')
+
+        // flex 레이아웃이 자리를 잡으며 컨테이너 크기가 바뀌면 지도 내부 크기 캐시가
+        // 낡아져 "전체 보기"가 실제 크기를 반영하지 못할 수 있어, 크기 변화를 알려준다.
+        if ('ResizeObserver' in window) {
+          ro = new ResizeObserver(() => {
+            if (!mapRef.current) return
+            try {
+              window.naver.maps.Event.trigger(mapRef.current, 'resize')
+            } catch {
+              /* SDK가 resize 이벤트를 지원하지 않는 버전이면 조용히 무시 */
+            }
+          })
+          ro.observe(elRef.current)
+        }
       })
       .catch(() => {
         if (!cancelled) setStatus('error')
@@ -73,6 +88,7 @@ export default function MapCanvas({
     return () => {
       cancelled = true
       off()
+      ro?.disconnect()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])

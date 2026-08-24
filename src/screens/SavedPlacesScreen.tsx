@@ -56,6 +56,12 @@ export default function SavedPlacesScreen() {
           <h1 className="hero">저장 장소</h1>
           <div className="sub">{store.savedPlaces.length}곳 저장됨</div>
         </div>
+        <div className="spacer" />
+        {course && course.places.length > 0 && (
+          <button className="btn xs" onClick={() => navigate('/')}>
+            담은 장소 {course.places.length}곳
+          </button>
+        )}
       </div>
 
       <div

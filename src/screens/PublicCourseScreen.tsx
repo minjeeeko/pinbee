@@ -76,7 +76,6 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
       <div className="scroll pad" style={{ marginTop: 12 }}>
         <div className="flexrow" style={{ gap: 6, marginBottom: 8 }}>
           <span className="pill dark">공개</span>
-          <span className="pill">읽기 전용</span>
         </div>
         <div className="bold" style={{ fontSize: 17, lineHeight: '27px' }}>
           {course.title}
@@ -121,9 +120,6 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
           )
         })}
 
-        <div className="banner" style={{ marginTop: 16 }}>
-          이 화면은 읽기 전용이에요. 장소·순서·경로를 편집할 수는 없어요.
-        </div>
       </div>
 
       <Modal open={reportOpen} onClose={() => setReportOpen(false)}>

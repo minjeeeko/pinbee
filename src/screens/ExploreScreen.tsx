@@ -39,6 +39,12 @@ export default function ExploreScreen() {
     <div className="screen">
       <div className="appbar" style={{ paddingBottom: 0 }}>
         <h1 className="hero">탐색</h1>
+        <div className="spacer" />
+        {store.draft && store.draft.places.length > 0 && (
+          <button className="btn xs" onClick={() => navigate('/')}>
+            담은 장소 {store.draft.places.length}곳
+          </button>
+        )}
       </div>
 
       <div className="appbar" style={{ paddingTop: 12 }}>
