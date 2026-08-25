@@ -15,6 +15,25 @@
 `schema.sql`을 다시 실행하지 말고 **`migrations/0002_role_profile_fields_dashboard.sql`을 SQL Editor에서 한 번 실행**하세요.
 기존 데이터(가입자·코스 등)는 그대로 유지되고, `is_admin=true`였던 계정은 자동으로 `role='admin'`으로 옮겨집니다.
 
+## 자동차 경로찾기(Directions) 기능을 새로 받았다면
+
+NCP Directions 5(자동차 길찾기)는 REST 전용 API라 호출할 때 Client Secret이 꼭 필요합니다. 브라우저에서 직접
+부르면 Secret이 그대로 노출되므로, `supabase/functions/directions`라는 Supabase Edge Function이 대신
+호출하고 Secret은 그 함수의 서버 환경변수에만 둡니다. 배포가 필요합니다:
+
+```bash
+# 1) NCP 콘솔에서 Directions 5(경로찾기)를 이용 설정한 Application의 Client ID·Secret을 시크릿으로 등록
+supabase secrets set NAVER_MAP_CLIENT_ID=xxxxxxxxxx NAVER_MAP_CLIENT_SECRET=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# 2) 함수 배포
+supabase functions deploy directions
+```
+
+이 시크릿은 Vercel의 `NAVER_MAP_CLIENT_ID`(브라우저에 노출되는 값)와는 **완전히 별개**로 Supabase 쪽에만
+등록하는 값입니다. Directions 5가 활성화된 Application의 Client ID·Secret을 써야 하고, 지도·지오코딩에
+쓰는 Application과 같아도 되고 달라도 됩니다(같은 값이면 `supabase secrets set`에 한 번만 등록하면 됩니다).
+배포하지 않아도 앱은 그냥 하버사인 직선거리 근사로 동작하므로 필수는 아닙니다.
+
 ## 주소·장소 검색(지오코딩) 기능을 새로 받았다면
 
 `schema.sql`을 이미 실행한 적이 있는 DB라면 **`migrations/0003_geocoded_places.sql`을 SQL Editor에서 한 번 실행**하세요.
@@ -93,6 +112,11 @@ SQL Editor는 로그인 세션이 아니라서 셀프 승격 방지 트리거에
   통계 RPC 자체가 서버에서 막혀 있어 우회할 수 없습니다.
 - **회원가입 직후**에는 `preferences` 행이 아직 없으므로 자동으로 `#/onboarding`으로 이동해 이동수단·선호
   장소 유형을 물어봅니다. 완료(또는 건너뛰기)하는 순간 `preferences` 행이 생기고, 그 뒤로는 다시 뜨지 않습니다.
+- **자동차 구간 실제 경로**: 내 코스를 만들고 검토하는 화면(`#/`, `#/edit`, `#/order`, `#/summary`, `#/save`,
+  `#/prefs`)에서 이동수단이 "자동차"인 구간은 먼저 직선거리 근사로 보여주고, `directions` Edge Function으로
+  백그라운드 조회한 실제 도로 거리·시간이 도착하면 자동으로 갱신됩니다. 탐색·공개 코스처럼 여러 코스를 한
+  번에 보여주는 화면은 API 호출이 늘어나는 걸 막기 위해 항상 직선거리 근사만 씁니다. Edge Function을 배포하지
+  않았거나 실패하면 조용히 직선거리 근사로 남습니다(에러를 화면에 띄우지 않습니다).
 - **주소·장소 검색**(`#/search`)에서 찾은 장소는 화면에 뜨는 즉시 클라이언트의 `PLACE_MAP`에 등록되어 내장
   40곳과 똑같이 코스 추가·저장 장소 담기에 쓸 수 있습니다. 실제 DB에는 곧바로 쓰지 않고, **코스를 저장하거나
   저장 장소에 담는 시점**(로그인이 필요한 순간)에 비로소 `places`에 없으면 추가합니다 — `course_places`/
@@ -111,5 +135,10 @@ Playwright로 검증하는 과정에서 실제 버그 두 개를 찾아 고쳤�
 검증했습니다: 검색 → "주소로 찾은 장소" 카드 노출 → 코스에 추가 → 로그인 상태로 코스 저장까지 실행해
 `places`(카테고리 "기타", `region`이 주소에서 올바르게 추출됨) → `course_places` 순으로 정상적으로 저장되고
 (먼저 `places`가 없으면 FK 위반이 나도록 흉내 낸 목 DB로 순서를 검증했습니다), `fetchPlacesByIds`로 다시
-불러와도 같은 장소로 매핑되는 것까지 확인했습니다. 다만 이 전부가 목(mock) 기반 검증이라, **실제 프로젝트
-URL·anon key, 실제 네이버 지도 Client ID로 한 번은 라이브로 확인하는 걸 추천합니다.**
+불러와도 같은 장소로 매핑되는 것까지 확인했습니다. 자동차 경로(Directions)도 `functions.invoke`를 가짜로
+흉내 내(지연 시간을 일부러 줘서) 검증했습니다: 12km 넘게 떨어진 두 장소를 자동차 구간으로 추가하면 처음엔
+직선거리 근사(15.5km)가 바로 뜨고, 백그라운드 조회가 끝나면 자동으로 실제 경로 값(21.6km)으로 화면이
+갱신되는 것까지 확인했습니다. `directions` Edge Function 자체의 NCP 응답 파싱 로직도 정상/에러/형식이
+다른 응답 세 가지 모두 별도로 단위 검증했습니다. 다만 이 전부가 목(mock) 기반 검증이고 이 샌드박스에서는
+NCP 서버로 실제 네트워크 요청을 보낼 수 없어서, **실제 프로젝트 URL·anon key, 실제 네이버 지도 Client ID로,
+그리고 `directions` Edge Function을 배포한 뒤에 한 번은 라이브로 확인하는 걸 추천합니다.**

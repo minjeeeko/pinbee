@@ -1,5 +1,6 @@
 import type { CoursePlace, Leg, Transport } from './types'
 import { PLACE_MAP } from '../data/places'
+import { getCachedDrivingLeg } from './directions'
 
 const R = 6371 // km
 
@@ -37,16 +38,24 @@ export function legMinutes(distanceKm: number, transport: Transport): number | n
   return Math.max(4, Math.round(4 + (d / 24) * 60))
 }
 
-/** 코스 장소 목록으로 구간 정보를 계산한다 */
-export function computeLegs(places: CoursePlace[]): Leg[] {
+/**
+ * 코스 장소 목록으로 구간 정보를 계산한다.
+ * opts.realDriving이 켜져 있으면 자동차 구간은 실제 도로 기준 거리·시간(캐시에 있을 때만, Supabase Edge
+ * Function 프록시로 백그라운드 조회)을 쓰고, 없으면 직선거리 근사로 대체한다. 도보·대중교통은 NCP Maps에
+ * 대응하는 API가 없어 항상 직선거리 근사를 쓴다. 탐색·공개 코스 목록처럼 여러 코스를 한 번에 보여주는
+ * 화면에서는 realDriving을 켜지 않는다 — API 호출이 코스 수만큼 늘어나는 걸 막기 위해서다.
+ */
+export function computeLegs(places: CoursePlace[], opts?: { realDriving?: boolean }): Leg[] {
   const legs: Leg[] = []
   for (let i = 0; i < places.length - 1; i++) {
     const from = PLACE_MAP[places[i].placeId]
     const to = PLACE_MAP[places[i + 1].placeId]
     if (!from || !to) continue
     const transport = places[i].transportToNext
-    const distanceKm = haversineKm(from, to)
-    const minutes = legMinutes(distanceKm, transport)
+    const straightKm = haversineKm(from, to)
+    const real = opts?.realDriving && transport === 'car' ? getCachedDrivingLeg(from, to) : null
+    const distanceKm = real ? real.distanceKm : straightKm
+    const minutes = real ? real.minutes : legMinutes(straightKm, transport)
     legs.push({
       fromPlaceId: from.id,
       toPlaceId: to.id,
@@ -55,7 +64,7 @@ export function computeLegs(places: CoursePlace[]): Leg[] {
       distanceKm,
       error:
         minutes === null
-          ? `${distanceKm.toFixed(1)}km는 도보 경로를 계산할 수 없어요. 대중교통이나 자동차로 바꿔보세요.`
+          ? `${straightKm.toFixed(1)}km는 도보 경로를 계산할 수 없어요. 대중교통이나 자동차로 바꿔보세요.`
           : undefined,
     })
   }

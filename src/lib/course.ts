@@ -3,8 +3,8 @@ import { computeLegs, totalTravelMinutes } from './geo'
 import { computeSchedule, parseTime, totalStayMinutes } from './schedule'
 import { PLACE_MAP } from '../data/places'
 
-export function courseStats(course: Course) {
-  const legs = computeLegs(course.places)
+export function courseStats(course: Course, opts?: { realDriving?: boolean }) {
+  const legs = computeLegs(course.places, opts)
   const schedule = computeSchedule(course, legs)
   const travel = totalTravelMinutes(legs)
   const stay = totalStayMinutes(course.places)

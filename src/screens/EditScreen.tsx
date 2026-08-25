@@ -13,7 +13,10 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
   const store = useStore()
   const course = courseId ? store.getCourse(courseId) : store.draft
   const [editing, setEditing] = useState<string | null>(null)
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
 
   if (!course || !stats) {
     return (

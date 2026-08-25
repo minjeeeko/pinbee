@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import type { Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
 import { DEFAULT_PREFS } from '../data/seed'
 import { PLACE_MAP, registerPlace } from '../data/places'
+import { onDirectionsUpdate } from './directions'
 import { haversineKm, suggestTransport } from './geo'
 import { supabase, isSupabaseConfigured } from './supabase'
 import * as db from './db'
@@ -77,6 +78,8 @@ interface State {
   draftId: string | null
   /** PLACE_MAP(뮤터블 참조 테이블)에 주소 검색으로 찾은 장소를 등록할 때마다 올려서 리렌더를 유도한다 */
   placesVersion: number
+  /** 실제 자동차 경로 캐시가 백그라운드로 갱신될 때마다 올려서 리렌더를 유도한다 */
+  directionsVersion: number
 }
 
 interface StoreValue extends State {
@@ -122,6 +125,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     prefs: DEFAULT_PREFS,
     draftId: local.current.draftId,
     placesVersion: 0,
+    directionsVersion: 0,
   }))
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -130,6 +134,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const localCourses = state.courses.filter((c) => !isSavedCourseId(c.id))
     localStorage.setItem(LOCAL_KEY, JSON.stringify({ localCourses, draftId: state.draftId }))
   }, [state.courses, state.draftId])
+
+  // 실제 자동차 경로(directions.ts 캐시)가 백그라운드 조회로 갱신될 때마다 리렌더를 유도한다
+  useEffect(() => {
+    return onDirectionsUpdate(() => setState((s) => ({ ...s, directionsVersion: s.directionsVersion + 1 })))
+  }, [])
 
   const toast = useCallback((text: string) => {
     const id = Date.now() + Math.random()

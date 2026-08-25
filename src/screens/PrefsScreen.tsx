@@ -14,7 +14,10 @@ export default function PrefsScreen({ courseId }: { courseId?: string }) {
   const prefs = store.prefs
   const [applied, setApplied] = useState(false)
 
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
   const issues = useMemo(
     () => (course && stats ? findIssues(course, stats.legs, prefs) : []),
     [course, stats, prefs],

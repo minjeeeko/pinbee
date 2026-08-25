@@ -16,7 +16,10 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
   const course = courseId ? store.getCourse(courseId) : store.draft
   const [active, setActive] = useState<number | null>(null)
   const [suggestOpen, setSuggestOpen] = useState(false)
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
 
   const suggestion = useMemo(() => {
     if (!course) return null

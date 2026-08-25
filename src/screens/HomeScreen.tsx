@@ -18,7 +18,10 @@ export default function HomeScreen() {
     rowRef.current?.scrollBy({ left: dir * CARD_STEP, behavior: 'smooth' })
   }
 
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
 
   if (!course || !stats) {
     return (

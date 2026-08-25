@@ -17,7 +17,10 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
   const [loginOpen, setLoginOpen] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
 
   if (!course || !stats) {
     return (

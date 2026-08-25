@@ -13,7 +13,10 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
   const course = courseId ? store.getCourse(courseId) : store.draft
   const [expanded, setExpanded] = useState(false)
   const [active, setActive] = useState<number | null>(null)
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const stats = useMemo(
+    () => (course ? courseStats(course, { realDriving: true }) : null),
+    [course, store.directionsVersion],
+  )
 
   if (!course || !stats) {
     return (
