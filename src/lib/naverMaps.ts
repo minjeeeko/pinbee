@@ -3,9 +3,12 @@
  *
  * Client ID는 웹 서비스 URL 제한으로 보호되는 공개 식별자라 번들에 포함해도 안전하다.
  * Client Secret은 서버 간 REST 호출(geocoding 등)에만 쓰이므로 이 클라이언트 코드에서는 사용하지 않는다.
- * .env.local(또는 Vercel 환경변수)의 VITE_NAVER_MAP_CLIENT_ID로 넣는다.
+ * .env.local(또는 Vercel 환경변수)의 NAVER_MAP_CLIENT_ID로 넣는다. VITE_ 접두사를 일부러
+ * 안 붙였다 — Vercel이 VITE_ 같은 "프레임워크 공개 접두사"를 보면 저장을 막는 경고를
+ * 띄우는데, 이 값은 원래 공개돼도 안전한 값이라 vite.config.ts의 envPrefix로 별도 등록해
+ * 그 경고를 우회한다.
  */
-export const NAVER_MAP_CLIENT_ID = import.meta.env.VITE_NAVER_MAP_CLIENT_ID as string | undefined
+export const NAVER_MAP_CLIENT_ID = import.meta.env.NAVER_MAP_CLIENT_ID as string | undefined
 export const isNaverMapConfigured = Boolean(NAVER_MAP_CLIENT_ID)
 
 declare global {
