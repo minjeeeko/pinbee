@@ -1,11 +1,75 @@
+import { useRef, useState } from 'react'
 import { navigate } from '../lib/router'
-import { resetStore, useStore } from '../lib/store'
-import { CourseCard } from '../components/common'
+import { useStore } from '../lib/store'
+import { AGE_GROUPS, REFERRAL_SOURCES, EXPECTED_FEATURES } from '../data/seed'
 import { Empty } from '../components/ui'
 
 export default function MeScreen() {
   const store = useStore()
-  const pending = store.reports.filter((r) => r.status === 'pending').length
+  const user = store.user
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+
+  const [name, setName] = useState(user?.name ?? '')
+  const [ageGroup, setAgeGroup] = useState(user?.ageGroup ?? null)
+  const [referralSource, setReferralSource] = useState(user?.referralSource ?? null)
+  const [expectedFeatures, setExpectedFeatures] = useState<string[]>(user?.expectedFeatures ?? [])
+  const [saving, setSaving] = useState(false)
+
+  const dirty =
+    !!user &&
+    (name !== user.name ||
+      ageGroup !== user.ageGroup ||
+      referralSource !== user.referralSource ||
+      expectedFeatures.join() !== user.expectedFeatures.join())
+
+  const toggleFeature = (f: string) =>
+    setExpectedFeatures((fs) => (fs.includes(f) ? fs.filter((x) => x !== f) : [...fs, f]))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await store.updateProfile({ name: name.trim(), ageGroup, referralSource, expectedFeatures })
+      store.toast('프로필을 저장했어요')
+    } catch {
+      store.toast('저장에 실패했어요. 다시 시도해주세요')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const pickAvatar = async (file: File) => {
+    setUploading(true)
+    try {
+      await store.uploadAvatar(file)
+      store.toast('프로필 이미지를 바꿨어요')
+    } catch {
+      store.toast('이미지 업로드에 실패했어요. 다시 시도해주세요')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  if (!user) {
+    return (
+      <div className="screen">
+        <div className="appbar">
+          <h1 className="hero">내 정보</h1>
+        </div>
+        <div className="scroll pad">
+          <Empty
+            title="로그인하지 않았어요"
+            desc="프로필을 관리하려면 로그인해주세요."
+            action={
+              <button className="btn primary" onClick={() => navigate('/login?next=' + encodeURIComponent('/me'))}>
+                로그인
+              </button>
+            }
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="screen">
@@ -14,92 +78,99 @@ export default function MeScreen() {
       </div>
 
       <div className="scroll pad">
-        <div className="card">
-          {store.user ? (
-            <div className="between">
-              <div>
-                <div className="bold">{store.user.name}</div>
-                <div className="tiny muted">{store.user.email} · 이메일 로그인</div>
-              </div>
-              <button className="btn xs" onClick={() => store.logout()}>
-                로그아웃
-              </button>
-            </div>
-          ) : (
-            <div className="between">
-              <div>
-                <div className="bold">로그인하지 않았어요</div>
-                <div className="tiny muted">공개 코스는 그대로 볼 수 있어요. 저장에는 로그인이 필요해요.</div>
-              </div>
-              <button className="btn xs primary" onClick={() => navigate('/login')}>
-                로그인
-              </button>
-            </div>
-          )}
+        <div className="flexrow" style={{ gap: 14, alignItems: 'center', marginBottom: 20 }}>
+          <button
+            className="tap"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: 999,
+              border: '1px solid var(--border)',
+              background: user.avatarUrl ? `center/cover url(${user.avatarUrl})` : 'var(--surface)',
+              flex: 'none',
+            }}
+            aria-label="프로필 이미지 변경"
+          />
+          <div style={{ minWidth: 0 }}>
+            <div className="bold truncate">{user.name}</div>
+            <div className="tiny muted truncate">{user.email}</div>
+            <button className="textbtn" style={{ marginTop: 2 }} onClick={() => fileRef.current?.click()} disabled={uploading}>
+              {uploading ? '업로드 중…' : '사진 바꾸기'}
+            </button>
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) pickAvatar(f)
+            }}
+          />
         </div>
 
-        <div className="section-title">내 코스 {store.myCourses.length}개</div>
-        {store.myCourses.length === 0 ? (
-          <Empty title="저장한 코스가 없어요" />
-        ) : (
-          store.myCourses.map((c) => (
-            <div key={c.id}>
-              <CourseCard course={c} onClick={() => navigate('/edit/' + c.id)} />
-              <div className="flexrow" style={{ gap: 6, margin: '6px 0 4px' }}>
-                <button className="btn xs" onClick={() => navigate('/summary/' + c.id)}>
-                  동선 보기
-                </button>
-                <button
-                  className="btn xs"
-                  onClick={() => {
-                    store.setVisibility(c.id, c.visibility === 'public' ? 'private' : 'public')
-                    store.toast(c.visibility === 'public' ? '비공개로 전환했어요' : '공개로 전환했어요')
-                  }}
-                >
-                  {c.visibility === 'public' ? '비공개 전환' : '공개 전환'}
-                </button>
-                <button className="btn xs" onClick={() => navigate('/s/' + c.shareToken)}>
-                  공유 화면
-                </button>
-                <button
-                  className="btn xs"
-                  onClick={() => {
-                    store.deleteCourse(c.id)
-                    store.toast('코스를 삭제했어요')
-                  }}
-                >
-                  삭제
-                </button>
-              </div>
-            </div>
-          ))
+        <label className="field">
+          <span className="label">닉네임</span>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+
+        <div className="field">
+          <span className="label">연령대</span>
+          <div className="chips">
+            {AGE_GROUPS.map((a) => (
+              <button key={a} className={`chip sm${ageGroup === a ? ' on' : ''}`} onClick={() => setAgeGroup(a)}>
+                {a}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <span className="label">어떻게 알고 오셨어요?</span>
+          <div className="chips">
+            {REFERRAL_SOURCES.map((r) => (
+              <button
+                key={r}
+                className={`chip sm${referralSource === r ? ' on' : ''}`}
+                onClick={() => setReferralSource(r)}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <span className="label">기대하는 기능 (복수 선택)</span>
+          <div className="chips">
+            {EXPECTED_FEATURES.map((f) => (
+              <button
+                key={f}
+                className={`chip sm${expectedFeatures.includes(f) ? ' on' : ''}`}
+                onClick={() => toggleFeature(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button className="btn primary block" disabled={!dirty || saving} onClick={save} style={{ marginTop: 8 }}>
+          {saving ? '저장 중…' : '프로필 저장'}
+        </button>
+
+        <button className="btn block" style={{ marginTop: 10 }} onClick={() => store.logout()}>
+          로그아웃
+        </button>
+
+        {user.isAdmin && (
+          <button className="btn outline block" style={{ marginTop: 24 }} onClick={() => navigate('/admin')}>
+            관리자 대시보드
+          </button>
         )}
-
-        <div className="section-title">설정</div>
-        <div className="card tap" onClick={() => navigate('/prefs/' + (store.draft?.id ?? ''))}>
-          <div className="between">
-            <span className="small bold">선호 조건 설정</span>
-            <span className="textbtn">설정</span>
-          </div>
-          <div className="tiny muted" style={{ marginTop: 3 }}>
-            이동수단 · 최대 이동시간 · 선호 장소 유형
-          </div>
-        </div>
-        <div className="card tap" onClick={() => navigate('/admin')}>
-          <div className="between">
-            <span className="small bold">신고 관리 (관리자)</span>
-            <span className="pill">{pending}건 대기</span>
-          </div>
-        </div>
-        <div className="card tap" onClick={() => resetStore()}>
-          <div className="between">
-            <span className="small bold">프로토타입 데이터 초기화</span>
-            <span className="textbtn">초기화</span>
-          </div>
-          <div className="tiny muted" style={{ marginTop: 3 }}>
-            저장된 코스와 설정을 처음 상태로 되돌려요
-          </div>
-        </div>
       </div>
     </div>
   )

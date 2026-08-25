@@ -12,6 +12,17 @@ const STATUS_LABEL: Record<string, string> = {
 export default function AdminScreen() {
   const store = useStore()
 
+  if (!store.user?.isAdmin) {
+    return (
+      <div className="screen">
+        <AppBar title="신고 관리" onBack={goBack} />
+        <div className="scroll pad">
+          <Empty title="접근 권한이 없어요" desc="관리자 계정으로 로그인해주세요." />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="screen">
       <AppBar title="신고 관리" sub="관리자 검토 목록" onBack={goBack} />

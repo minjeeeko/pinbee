@@ -40,8 +40,13 @@ export default function ExploreScreen() {
       <div className="appbar" style={{ paddingBottom: 0 }}>
         <h1 className="hero">탐색</h1>
         <div className="spacer" />
+        {store.user && (
+          <button className="btn xs" onClick={() => navigate('/my-courses')}>
+            내 코스
+          </button>
+        )}
         {store.draft && store.draft.places.length > 0 && (
-          <button className="btn xs" onClick={() => navigate('/')}>
+          <button className="btn xs" style={{ marginLeft: 6 }} onClick={() => navigate('/')}>
             담은 장소 {store.draft.places.length}곳
           </button>
         )}
@@ -97,7 +102,9 @@ export default function ExploreScreen() {
 
       <div className="scroll pad" style={{ marginTop: 14 }}>
         <div className="between" style={{ marginBottom: 10 }}>
-          <span className="tiny muted">공개 코스 {results.length}개</span>
+          <span className="tiny muted">
+            {region || theme || transport || q ? `검색 결과 ${results.length}개` : `공개된 코스 전체 ${results.length}개`}
+          </span>
           {(region || theme || transport || q) && (
             <button className="btn xs" onClick={reset}>
               조건 초기화
@@ -105,7 +112,9 @@ export default function ExploreScreen() {
           )}
         </div>
 
-        {results.length === 0 ? (
+        {store.publicCourses.length === 0 ? (
+          <Empty title="아직 공개된 코스가 없어요" desc="코스를 만들고 공개로 전환하면 여기서 누구나 볼 수 있어요." />
+        ) : results.length === 0 ? (
           <Empty
             title="조건에 맞는 공개 코스가 없어요"
             desc="지역이나 테마 조건을 바꾸면 더 많은 코스를 볼 수 있어요."

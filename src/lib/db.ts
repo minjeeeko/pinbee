@@ -203,9 +203,82 @@ export async function updateReportStatus(reportId: string, status: Report['statu
   if (error) throw error
 }
 
-export async function fetchProfile(userId: string): Promise<{ name: string; isAdmin: boolean } | null> {
-  const { data, error } = await supabase.from('profiles').select('name, is_admin').eq('id', userId).maybeSingle()
+export interface Profile {
+  name: string
+  isAdmin: boolean
+  ageGroup: string | null
+  avatarUrl: string | null
+  referralSource: string | null
+  expectedFeatures: string[]
+}
+
+/** 로그인한 본인 프로필만 돌려주는 RPC (get_my_profile, SECURITY DEFINER) */
+export async function fetchMyProfile(): Promise<Profile | null> {
+  const { data, error } = await supabase.rpc('get_my_profile')
   if (error) throw error
   if (!data) return null
-  return { name: data.name, isAdmin: data.is_admin }
+  return {
+    name: data.name,
+    isAdmin: data.role === 'admin',
+    ageGroup: data.age_group,
+    avatarUrl: data.avatar_url,
+    referralSource: data.referral_source,
+    expectedFeatures: data.expected_features ?? [],
+  }
+}
+
+export async function updateProfile(
+  userId: string,
+  patch: Partial<{ name: string; ageGroup: string | null; referralSource: string | null; expectedFeatures: string[]; avatarUrl: string | null }>,
+) {
+  const row: Record<string, unknown> = {}
+  if (patch.name !== undefined) row.name = patch.name
+  if (patch.ageGroup !== undefined) row.age_group = patch.ageGroup
+  if (patch.referralSource !== undefined) row.referral_source = patch.referralSource
+  if (patch.expectedFeatures !== undefined) row.expected_features = patch.expectedFeatures
+  if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl
+  if (Object.keys(row).length === 0) return
+  const { error } = await supabase.from('profiles').update(row).eq('id', userId)
+  if (error) throw error
+}
+
+/** avatars 버킷의 본인 폴더(userId/...)에 업로드하고 공개 URL을 돌려준다 */
+export async function uploadAvatar(userId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${userId}/${Date.now()}.${ext}`
+  const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
+  if (error) throw error
+  const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return data.publicUrl
+}
+
+export interface AdminStats {
+  totalUsers: number
+  newUsers7d: number
+  totalCourses: number
+  publicCourses: number
+  privateCourses: number
+  hiddenCourses: number
+  pendingReports: number
+  ageGroupCounts: Record<string, number>
+  referralSourceCounts: Record<string, number>
+  expectedFeatureCounts: Record<string, number>
+}
+
+/** admin_stats RPC. 관리자가 아니면 서버에서 예외를 던진다 (SECURITY DEFINER) */
+export async function fetchAdminStats(): Promise<AdminStats> {
+  const { data, error } = await supabase.rpc('admin_stats')
+  if (error) throw error
+  return {
+    totalUsers: data.total_users,
+    newUsers7d: data.new_users_7d,
+    totalCourses: data.total_courses,
+    publicCourses: data.public_courses,
+    privateCourses: data.private_courses,
+    hiddenCourses: data.hidden_courses,
+    pendingReports: data.pending_reports,
+    ageGroupCounts: data.age_group_counts ?? {},
+    referralSourceCounts: data.referral_source_counts ?? {},
+    expectedFeatureCounts: data.expected_feature_counts ?? {},
+  }
 }

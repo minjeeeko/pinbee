@@ -15,7 +15,9 @@ import MeScreen from './screens/MeScreen'
 import PrefsScreen from './screens/PrefsScreen'
 import LoginScreen from './screens/LoginScreen'
 import AdminScreen from './screens/AdminScreen'
+import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
+import MyCoursesScreen from './screens/MyCoursesScreen'
 
 const TABS = [
   { key: '', label: '내 코스' },
@@ -80,7 +82,11 @@ export default function App() {
         return <LoginScreen />
       case 'onboarding':
         return <OnboardingScreen />
+      case 'my-courses':
+        return <MyCoursesScreen />
       case 'admin':
+        return <AdminDashboardScreen />
+      case 'reports':
         return <AdminScreen />
       default:
         return <HomeScreen />

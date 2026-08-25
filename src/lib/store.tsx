@@ -102,6 +102,8 @@ interface StoreValue extends State {
   setPrefs: (p: Preferences) => void
   addReport: (courseId: string, reason: string) => Promise<'created' | 'duplicate'>
   resolveReport: (reportId: string, status: Report['status']) => void
+  updateProfile: (patch: Partial<Pick<User, 'name' | 'ageGroup' | 'referralSource' | 'expectedFeatures'>>) => Promise<void>
+  uploadAvatar: (file: File) => Promise<void>
 }
 
 const Ctx = createContext<StoreValue | null>(null)
@@ -142,7 +144,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         return
       }
       try {
-        const profile = await db.fetchProfile(authUser.id)
+        const profile = await db.fetchMyProfile()
         setState((s) => ({
           ...s,
           authLoading: false,
@@ -152,6 +154,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             email: authUser.email ?? '',
             provider: 'email',
             isAdmin: profile?.isAdmin ?? false,
+            ageGroup: profile?.ageGroup ?? null,
+            avatarUrl: profile?.avatarUrl ?? null,
+            referralSource: profile?.referralSource ?? null,
+            expectedFeatures: profile?.expectedFeatures ?? [],
           },
         }))
       } catch {
@@ -194,6 +200,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         })
       })
       .catch(() => toast('코스를 불러오지 못했어요'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.user?.id])
+
+  // 로그인 사용자가 바뀌면(로그아웃 포함) draftId가 "이미 저장된 남의 코스"를 가리키고
+  // 있지 않은지 확인한다. 그런 상태로 남아있으면 같은 브라우저에서 다른 계정으로
+  // 갈아탔을 때 남의 저장된 코스를 편집하게 될 수 있어 새 로컬 초안으로 바꿔치기한다.
+  // 아직 저장 안 한(로컬) 초안은 게스트 -> 로그인 전환 시 그대로 이어가야 하므로 건드리지 않는다.
+  useEffect(() => {
+    setState((s) => {
+      const userId = s.user?.id ?? null
+      const current = s.courses.find((c) => c.id === s.draftId)
+      const stale = s.draftId !== null && isSavedCourseId(s.draftId) && current?.authorId !== userId
+      if (!stale) return s
+      const fresh = newCourse(userId ?? 'guest', s.user?.name ?? '게스트')
+      return { ...s, courses: [...s.courses, fresh], draftId: fresh.id }
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.user?.id])
 
@@ -382,6 +404,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         } else if (status === 'deleted') {
           db.deleteCourseRow(report.courseId).catch(() => {})
         }
+      },
+      updateProfile: async (patch) => {
+        if (!state.user) throw new Error('로그인이 필요해요')
+        setState((s) => (s.user ? { ...s, user: { ...s.user, ...patch } } : s))
+        await db.updateProfile(state.user.id, patch)
+      },
+      uploadAvatar: async (file) => {
+        if (!state.user) throw new Error('로그인이 필요해요')
+        const url = await db.uploadAvatar(state.user.id, file)
+        await db.updateProfile(state.user.id, { avatarUrl: url })
+        setState((s) => (s.user ? { ...s, user: { ...s.user, avatarUrl: url } } : s))
       },
     }
   }, [state, toasts, toast, patchCourse, patchPlaces])

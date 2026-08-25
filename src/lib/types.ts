@@ -86,6 +86,10 @@ export interface User {
   email: string
   provider: 'email'
   isAdmin?: boolean
+  ageGroup: string | null
+  avatarUrl: string | null
+  referralSource: string | null
+  expectedFeatures: string[]
 }
 
 export interface ImportCandidate {

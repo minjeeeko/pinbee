@@ -51,7 +51,9 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
   }
 
   const unavailable =
-    !course || course.hidden || (course.visibility !== 'public' && course.authorId !== (store.user?.id ?? 'guest'))
+    !course ||
+    (course.hidden && !store.user?.isAdmin) ||
+    (course.visibility !== 'public' && course.authorId !== (store.user?.id ?? 'guest') && !store.user?.isAdmin)
 
   if (unavailable || !course || !stats) {
     return (
