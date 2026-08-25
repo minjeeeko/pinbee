@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Course, CoursePlace, Preferences, Report, SavedPlace } from './types'
+import type { Course, CoursePlace, Place, Preferences, Report, SavedPlace } from './types'
 
 /** 로컬에서만 존재하는(아직 저장 안 한) 코스는 uid('c')가 만든 'c-xxxxx' 형태라 UUID가 아니다 */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -124,6 +124,51 @@ export async function replaceCoursePlaces(courseId: string, places: CoursePlace[
 export async function deleteCourseRow(id: string) {
   const { error } = await supabase.from('courses').delete().eq('id', id)
   if (error) throw error
+}
+
+function mapPlace(row: any): Place {
+  return {
+    id: row.id,
+    name: row.name,
+    address: row.address,
+    region: row.region,
+    category: row.category,
+    lat: row.lat,
+    lng: row.lng,
+    hours: row.open_min != null && row.close_min != null ? { open: row.open_min, close: row.close_min } : undefined,
+    desc: row.description ?? undefined,
+    likeCount: row.like_count,
+  }
+}
+
+/** id로 장소를 조회한다. 코스·저장 장소가 참조하는 place_id 중 내장 40곳(정적 데이터)에 없는 것만 넘기면 된다 */
+export async function fetchPlacesByIds(ids: string[]): Promise<Place[]> {
+  if (ids.length === 0) return []
+  const { data, error } = await supabase.from('places').select('*').in('id', Array.from(new Set(ids)))
+  if (error) throw error
+  return (data ?? []).map(mapPlace)
+}
+
+/**
+ * 주소 검색(geocoding)으로 찾은 장소를 places에 추가한다.
+ * id가 좌표 기반이라 이미 있으면 그대로 두고, 없을 때만 새로 넣는다 (RLS는 'p-geo-'로 시작하는
+ * id의 insert만 허용하고 update/delete는 막아둬서 기존 내장 장소는 건드릴 수 없다).
+ */
+export async function ensurePlace(place: Place) {
+  const { error } = await supabase.from('places').insert({
+    id: place.id,
+    name: place.name,
+    address: place.address,
+    region: place.region,
+    category: place.category,
+    lat: place.lat,
+    lng: place.lng,
+    open_min: place.hours?.open ?? null,
+    close_min: place.hours?.close ?? null,
+    description: place.desc ?? null,
+    like_count: place.likeCount,
+  })
+  if (error && error.code !== '23505') throw error
 }
 
 export async function fetchSavedPlaces(): Promise<SavedPlace[]> {

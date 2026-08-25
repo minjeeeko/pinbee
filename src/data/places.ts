@@ -64,5 +64,14 @@ export const PLACES: Place[] = [
 
 export const PLACE_MAP: Record<string, Place> = Object.fromEntries(PLACES.map((p) => [p.id, p]))
 
-export const CATEGORIES: Place['category'][] = ['카페', '식당', '전시', '쇼핑', '산책', '관광']
+export const CATEGORIES: Place['category'][] = ['카페', '식당', '전시', '쇼핑', '산책', '관광', '기타']
 export const REGIONS = Array.from(new Set(PLACES.map((p) => p.region)))
+
+/**
+ * 주소 검색(Geocoding)으로 새로 찾은 장소를 실행 중에 PLACE_MAP에 등록한다.
+ * PLACE_MAP은 내장 40곳 조회에도 쓰이는 단일 참조 테이블이라, 여기에 더해두면
+ * PLACE_MAP[id] 를 쓰는 기존 화면들이 전부 그대로 새 장소도 보여줄 수 있다.
+ */
+export function registerPlace(place: Place) {
+  PLACE_MAP[place.id] = place
+}

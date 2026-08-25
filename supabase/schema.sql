@@ -106,7 +106,7 @@ create table public.places (
   name text not null,
   address text not null,
   region text not null,
-  category text not null check (category in ('카페', '식당', '전시', '쇼핑', '산책', '관광')),
+  category text not null check (category in ('카페', '식당', '전시', '쇼핑', '산책', '관광', '기타')),
   lat double precision not null,
   lng double precision not null,
   open_min int,
@@ -313,9 +313,14 @@ create policy "프로필 조회는 누구나" on public.profiles
 create policy "프로필 수정은 본인만" on public.profiles
   for update using (auth.uid() = id) with check (auth.uid() = id);
 
--- ---- places (읽기 전용 참조 데이터) ----
+-- ---- places (읽기 전용 참조 데이터 + 주소 검색으로 찾은 장소는 로그인 사용자가 추가 가능) ----
 create policy "장소는 누구나 조회" on public.places
   for select using (true);
+
+-- 주소 검색(geocoding) 결과만 추가 가능 (id가 'p-geo-'로 시작). 내장 40곳은 id가 다르므로 변경 불가.
+-- update/delete 정책은 없으므로 로그인 사용자도 기존 장소를 수정·삭제할 수 없다.
+create policy "주소 검색 장소는 로그인 사용자가 추가" on public.places
+  for insert to authenticated with check (id like 'p-geo-%');
 
 -- ---- courses ----
 create policy "코스 조회: 공개+비숨김 또는 본인 또는 관리자" on public.courses

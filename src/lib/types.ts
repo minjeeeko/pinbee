@@ -1,4 +1,4 @@
-export type Category = '카페' | '식당' | '전시' | '쇼핑' | '산책' | '관광'
+export type Category = '카페' | '식당' | '전시' | '쇼핑' | '산책' | '관광' | '기타'
 
 export type Transport = 'walk' | 'transit' | 'car'
 

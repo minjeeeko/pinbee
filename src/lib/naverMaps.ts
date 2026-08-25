@@ -46,7 +46,9 @@ export function loadNaverMaps(): Promise<void> {
       reject(new Error('네이버 지도 인증에 실패했어요. Client ID 또는 등록된 서비스 URL을 확인해주세요.'))
     }
     const script = document.createElement('script')
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_MAP_CLIENT_ID}`
+    // submodules=geocoder — 주소/장소 검색(Geocoding)도 같은 Client ID·도메인 인증으로 클라이언트에서 바로 쓴다.
+    // Client Secret이 필요한 서버 간 REST 호출을 거치지 않아도 된다.
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_MAP_CLIENT_ID}&submodules=geocoder`
     script.async = true
     script.onload = () => resolve()
     script.onerror = () => reject(new Error('네이버 지도 스크립트를 불러오지 못했어요.'))

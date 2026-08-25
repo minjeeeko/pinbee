@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
-import { PLACES, CATEGORIES, PLACE_MAP } from '../data/places'
+import { PLACES, CATEGORIES, PLACE_MAP, registerPlace } from '../data/places'
 import { extractFromImage, matchPlaces, parseText, similarity } from '../lib/importParse'
+import { geocodeAddress, geocodeResultToPlace } from '../lib/geocode'
 import type { Category, ImportCandidate, Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
@@ -16,6 +17,9 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   const [q, setQ] = useState('')
   const [cat, setCat] = useState<Category | '전체'>('전체')
   const [dupTarget, setDupTarget] = useState<Place | null>(null)
+
+  const [geoResults, setGeoResults] = useState<Place[]>([])
+  const [geoLoading, setGeoLoading] = useState(false)
 
   const [candidates, setCandidates] = useState<ImportCandidate[]>([])
   const [pasteText, setPasteText] = useState('')
@@ -40,6 +44,36 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       .slice(0, 30)
       .map((r) => r.p)
   }, [q, cat])
+
+  // 내장 40곳에서 못 찾았을 수 있는 실제 주소/장소를 네이버 지오코딩으로 찾아 보완한다.
+  // 검색어를 잠깐 멈췄을 때만 요청해 타이핑 중 API를 과도하게 호출하지 않는다.
+  useEffect(() => {
+    const query = q.trim()
+    if (mode !== 'search' || !query) {
+      setGeoResults([])
+      setGeoLoading(false)
+      return
+    }
+    let cancelled = false
+    setGeoLoading(true)
+    const timer = setTimeout(() => {
+      geocodeAddress(query)
+        .then((found) => {
+          if (cancelled) return
+          setGeoResults(found.slice(0, 5).map((r) => geocodeResultToPlace(r, query)))
+        })
+        .catch(() => {
+          if (!cancelled) setGeoResults([])
+        })
+        .finally(() => {
+          if (!cancelled) setGeoLoading(false)
+        })
+    }, 450)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [q, mode])
 
   const candidatePlaces = candidates
     .filter((c) => !c.excluded && c.placeId)
@@ -102,7 +136,11 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   }
 
   const resultCard = (place: Place, extra?: React.ReactNode) => {
+    // 주소 검색(geocoding) 결과는 내장 40곳과 달리 PLACE_MAP에 없을 수 있어, 카드에 보이는 순간
+    // 등록해둔다 — 코스 추가·저장 액션이 항상 PLACE_MAP[placeId]로 장소를 찾기 때문
+    if (!PLACE_MAP[place.id]) registerPlace(place)
     const added = courseHasPlace(course, place.id)
+    const isGeocoded = place.id.startsWith('p-geo-')
     return (
       <div className="card" key={place.id} style={{ padding: 12 }}>
         <div className="list-item">
@@ -112,6 +150,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
             <div className="meta truncate">
               {place.category} · 좋아요 {place.likeCount}
             </div>
+            {isGeocoded && <div className="tiny muted truncate">{place.address}</div>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
             <button className={`btn xs${added ? '' : ' primary'}`} onClick={() => add(place)}>
@@ -188,7 +227,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
           </div>
 
           <div className="scroll pad" style={{ marginTop: 12 }}>
-            {results.length === 0 ? (
+            {results.length === 0 && geoResults.length === 0 && !geoLoading ? (
               <Empty
                 title="검색 결과가 없어요"
                 desc="검색어의 철자를 확인하거나 카테고리 조건을 바꿔보세요."
@@ -206,6 +245,16 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
               />
             ) : (
               results.map((p) => resultCard(p))
+            )}
+
+            {geoLoading && <div className="tiny muted" style={{ marginTop: 16 }}>주소로 찾는 중…</div>}
+            {geoResults.length > 0 && (
+              <>
+                <div className="section-title" style={{ marginTop: 16 }}>
+                  주소로 찾은 장소
+                </div>
+                {geoResults.map((p) => resultCard(p))}
+              </>
             )}
           </div>
         </>

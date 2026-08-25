@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
 import { DEFAULT_PREFS } from '../data/seed'
-import { PLACE_MAP } from '../data/places'
+import { PLACE_MAP, registerPlace } from '../data/places'
 import { haversineKm, suggestTransport } from './geo'
 import { supabase, isSupabaseConfigured } from './supabase'
 import * as db from './db'
@@ -75,6 +75,8 @@ interface State {
   reports: Report[]
   prefs: Preferences
   draftId: string | null
+  /** PLACE_MAP(뮤터블 참조 테이블)에 주소 검색으로 찾은 장소를 등록할 때마다 올려서 리렌더를 유도한다 */
+  placesVersion: number
 }
 
 interface StoreValue extends State {
@@ -119,6 +121,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     reports: [],
     prefs: DEFAULT_PREFS,
     draftId: local.current.draftId,
+    placesVersion: 0,
   }))
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -203,6 +206,32 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.user?.id])
 
+  // 코스·저장 장소가 참조하는 장소 중 내장 40곳에 없는 것(주소 검색으로 찾아 등록된 장소)을
+  // PLACE_MAP에 채워 넣는다. 다른 기기·세션에서 저장한 코스를 새로고침해서 열 때 필요하다.
+  const missingPlaceIds = useMemo(() => {
+    const ids = new Set<string>()
+    state.courses.forEach((c) => {
+      c.places.forEach((p) => ids.add(p.placeId))
+      if (c.coverPlaceId) ids.add(c.coverPlaceId)
+    })
+    state.savedPlaces.forEach((sp) => ids.add(sp.placeId))
+    return Array.from(ids)
+      .filter((id) => !PLACE_MAP[id])
+      .sort()
+      .join(',')
+  }, [state.courses, state.savedPlaces])
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || !missingPlaceIds) return
+    db.fetchPlacesByIds(missingPlaceIds.split(','))
+      .then((places) => {
+        if (places.length === 0) return
+        places.forEach(registerPlace)
+        setState((s) => ({ ...s, placesVersion: s.placesVersion + 1 }))
+      })
+      .catch(() => {})
+  }, [missingPlaceIds])
+
   // 로그인 사용자가 바뀌면(로그아웃 포함) draftId가 "이미 저장된 남의 코스"를 가리키고
   // 있지 않은지 확인한다. 그런 상태로 남아있으면 같은 브라우저에서 다른 계정으로
   // 갈아탔을 때 남의 저장된 코스를 편집하게 될 수 있어 새 로컬 초안으로 바꿔치기한다.
@@ -226,6 +255,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }))
   }, [])
 
+  /** 주소 검색으로 등록된(id가 'p-geo-'로 시작하는) 장소가 DB에도 있는지 확인하고, 없으면 만든다 */
+  const ensureGeocodedPlaces = useCallback((placeIds: (string | null)[]) => {
+    const geoIds = Array.from(new Set(placeIds.filter((id): id is string => Boolean(id) && id!.startsWith('p-geo-'))))
+    return Promise.all(geoIds.map((id) => (PLACE_MAP[id] ? db.ensurePlace(PLACE_MAP[id]) : Promise.resolve())))
+  }, [])
+
   /** places가 바뀌는 액션 공용: 낙관적으로 로컬을 먼저 바꾸고, 저장된 코스면 백그라운드로 DB에 반영한다 */
   const patchPlaces = useCallback(
     (courseId: string, fn: (places: CoursePlace[]) => CoursePlace[]) => {
@@ -239,10 +274,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }),
       }))
       if (isSavedCourseId(courseId)) {
-        db.replaceCoursePlaces(courseId, nextPlaces).catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
+        ensureGeocodedPlaces(nextPlaces.map((p) => p.placeId))
+          .then(() => db.replaceCoursePlaces(courseId, nextPlaces))
+          .catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
       }
     },
-    [toast],
+    [toast, ensureGeocodedPlaces],
   )
 
   const value = useMemo<StoreValue>(() => {
@@ -294,6 +331,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             setState((s) => ({ ...s, courses: s.courses.map((c) => (c.id === id ? { ...c, saved: true } : c)) }))
             return { ok: true, id }
           }
+          await ensureGeocodedPlaces([...course.places.map((p) => p.placeId), course.coverPlaceId])
           const inserted = await db.insertCourse({ ...course, authorId: user.id, authorName: user.name })
           setState((s) => ({
             ...s,
@@ -351,7 +389,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           ...s,
           savedPlaces: already ? s.savedPlaces.filter((sp) => sp.placeId !== placeId) : [...s.savedPlaces, { placeId, memo: '' }],
         }))
-        const write = already ? db.deleteSavedPlace(placeId) : db.insertSavedPlace(state.user.id, placeId)
+        const userId = state.user.id
+        const write = already
+          ? db.deleteSavedPlace(placeId)
+          : ensureGeocodedPlaces([placeId]).then(() => db.insertSavedPlace(userId, placeId))
         write.catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
       },
       setSavedPlaceMemo: (placeId, memo) => {
@@ -417,7 +458,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setState((s) => (s.user ? { ...s, user: { ...s.user, avatarUrl: url } } : s))
       },
     }
-  }, [state, toasts, toast, patchCourse, patchPlaces])
+  }, [state, toasts, toast, patchCourse, patchPlaces, ensureGeocodedPlaces])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
