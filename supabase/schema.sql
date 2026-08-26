@@ -132,7 +132,12 @@ create table public.courses (
   theme text not null default '',
   saved boolean not null default false,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- author_id -> profiles(id)로도 걸어둬야 PostgREST가 코스 조회 시 작성자 이름
+  -- (profiles.name)을 자동으로 묶어(embed) 가져올 수 있다. auth.users(id) 참조만 있으면
+  -- courses와 profiles 사이에 직접 연결이 없어 "Could not find a relationship between
+  -- 'courses' and 'profiles'" 에러로 코스 조회·저장이 전부 실패한다.
+  constraint courses_author_id_profiles_fkey foreign key (author_id) references public.profiles (id)
 );
 
 create index courses_author_id_idx on public.courses (author_id);
