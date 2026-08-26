@@ -262,7 +262,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
 
       {mode === 'search' && q.trim() !== '' && (
         <>
-          <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+          <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
             <MapCanvas places={searchMapPlaces} showRoute={false} showNumbers={false} />
           </div>
 
@@ -356,7 +356,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
                 style={{
                   position: 'relative',
                   height: 168,
-                  borderRadius: 0,
+                  borderRadius: 14,
                   overflow: 'hidden',
                   border: '1px solid var(--border)',
                   margin: '16px 0',

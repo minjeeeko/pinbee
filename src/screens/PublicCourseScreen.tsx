@@ -127,7 +127,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         }
       />
 
-      <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 20px', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas places={stats.places} showRoute legs={stats.legs} seed={13} />
       </div>
 

@@ -40,12 +40,11 @@
   --sp-lg: 16px;
   --sp-xl: 20px;
 
-  /* 라운드: 카드·버튼·검색창·시트 등 각진 네모 요소는 0(직각)으로 통일한다.
-     칩·스위치·원형 아이콘 버튼처럼 원래부터 알약/원 모양인 요소만 --r-filter·--r-full을 계속 쓴다 */
-  --r-btn: 0px;
-  --r-card: 0px;
-  --r-search: 0px;
-  --r-sheet: 0px;
+  /* 라운드 12 / 16 / 18 / 24 / 30 / full */
+  --r-btn: 12px;
+  --r-card: 10px;
+  --r-search: 18px;
+  --r-sheet: 24px;
   --r-filter: 30px;
   --r-full: 999px;
 
@@ -296,7 +295,7 @@ input, textarea { -webkit-appearance: none; }
 .map-tool {
   height: 36px;
   padding: 0 12px;
-  border-radius: var(--r-full);
+  border-radius: var(--r-sheet);
   background: var(--canvas);
   border: 1px solid var(--border);
   font-size: 12px;
