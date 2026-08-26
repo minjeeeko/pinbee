@@ -3,8 +3,7 @@ import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { THEMES } from '../data/seed'
-import { PLACE_MAP } from '../data/places'
-import { AppBar, Empty, Modal, Switch, Thumb } from '../components/ui'
+import { AppBar, Empty, Modal, Switch } from '../components/ui'
 
 function shareUrl(token: string) {
   return `${window.location.origin}${window.location.pathname}#/s/${token}`
@@ -76,6 +75,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
         title="코스 저장"
         onBack={goBack}
         right={<span className="pill">{course.places.length}곳</span>}
+        logo
       />
 
       <div className="scroll pad">
@@ -111,38 +111,6 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
                 {t}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <span className="label">대표 이미지</span>
-          <div className="tiny muted" style={{ marginBottom: 8 }}>
-            코스 장소 사진 중 선택하거나 직접 업로드할 수 있어요
-          </div>
-          <div className="chips">
-            {course.places.map((cp) => {
-              const p = PLACE_MAP[cp.placeId]
-              const on = course.coverPlaceId === cp.placeId
-              return (
-                <button
-                  key={cp.uid}
-                  onClick={() => store.updateCourse(course.id, { coverPlaceId: cp.placeId })}
-                  style={{
-                    border: `1px solid ${on ? 'var(--ink)' : 'var(--border)'}`,
-                    borderRadius: 16,
-                    padding: 6,
-                    background: 'var(--canvas)',
-                    flex: 'none',
-                  }}
-                >
-                  <Thumb size="lg" category={p?.category} />
-                  <div className="tiny truncate" style={{ width: 60, marginTop: 4 }}>
-                    {p?.name}
-                  </div>
-                </button>
-              )
-            })}
-            {course.places.length === 0 && <span className="tiny muted">추가된 장소가 없어요</span>}
           </div>
         </div>
 

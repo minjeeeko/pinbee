@@ -82,12 +82,15 @@ export function AppBar({
   onBack,
   right,
   hero = false,
+  logo = false,
 }: {
   title: React.ReactNode
   sub?: React.ReactNode
   onBack?: () => void
   right?: React.ReactNode
   hero?: boolean
+  /** routiz 로고와 같은 제주돌담체로 타이틀을 표시한다 */
+  logo?: boolean
 }) {
   return (
     <div className="appbar">
@@ -97,7 +100,7 @@ export function AppBar({
         </button>
       )}
       <div style={{ minWidth: 0 }}>
-        <h1 className={`truncate${hero ? ' hero' : ''}`}>{title}</h1>
+        <h1 className={`truncate${hero ? ' hero' : ''}${logo ? ' logo' : ''}`}>{title}</h1>
         {sub && <div className="sub truncate">{sub}</div>}
       </div>
       <div className="spacer" />
@@ -121,7 +124,7 @@ export function Thumb({ size = '', category }: { size?: string; category?: Categ
   if (!category) return <span className={`thumb ${size}`} />
   const color = CATEGORY_COLOR[category]
   return (
-    <span className={`thumb ${size}`} style={{ background: `${color}1a`, borderColor: `${color}40` }}>
+    <span className={`thumb ${size}`} style={{ background: 'transparent', borderColor: `${color}40` }}>
       <CategoryIcon category={category} size={size === 'lg' ? 26 : 20} />
     </span>
   )

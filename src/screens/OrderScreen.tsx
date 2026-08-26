@@ -29,7 +29,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
 
   return (
     <div className="screen">
-      <AppBar title="순서 정하기" sub="변경한 동선은 자동 저장돼요" onBack={goBack} />
+      <AppBar title="순서 정하기" sub="변경한 동선은 자동 저장돼요" onBack={goBack} logo />
 
       <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas
@@ -75,7 +75,16 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                       <div className="meta truncate">{place?.category}</div>
                     </div>
                     <Thumb category={place?.category} />
-                    <span {...handle}>순서</span>
+                    <span {...handle}>
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+                        <circle cx="4" cy="3" r="1.3" fill="currentColor" />
+                        <circle cx="10" cy="3" r="1.3" fill="currentColor" />
+                        <circle cx="4" cy="7" r="1.3" fill="currentColor" />
+                        <circle cx="10" cy="7" r="1.3" fill="currentColor" />
+                        <circle cx="4" cy="11" r="1.3" fill="currentColor" />
+                        <circle cx="10" cy="11" r="1.3" fill="currentColor" />
+                      </svg>
+                    </span>
                     <button
                       className="btn xs"
                       onPointerDown={(e) => e.stopPropagation()}

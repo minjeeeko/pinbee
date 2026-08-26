@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { PLACE_MAP } from '../data/places'
+import { PLACE_MAP, CATEGORY_COLOR } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { Empty } from '../components/ui'
 import { CategoryIcon } from '../components/CategoryIcon'
@@ -111,7 +111,7 @@ export default function HomeScreen() {
               ref={rowRef}
               className="no-scrollbar"
               style={{
-                height: 110,
+                height: 66,
                 display: 'flex',
                 gap: 10,
                 overflowX: 'auto',
@@ -120,6 +120,7 @@ export default function HomeScreen() {
             >
               {course.places.map((cp) => {
                 const place = PLACE_MAP[cp.placeId]
+                const color = place ? CATEGORY_COLOR[place.category] : undefined
                 return (
                   <div
                     key={cp.uid}
@@ -130,7 +131,8 @@ export default function HomeScreen() {
                       padding: 10,
                       display: 'flex',
                       flexDirection: 'column',
-                      justifyContent: 'space-between',
+                      gap: 4,
+                      borderColor: color ?? undefined,
                     }}
                     onClick={() => setEditing(cp.uid)}
                   >
