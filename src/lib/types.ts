@@ -96,14 +96,6 @@ export interface User {
   expectedFeatures: string[]
 }
 
-export interface ImportCandidate {
-  id: string
-  raw: string
-  status: 'matched' | 'ambiguous' | 'failed'
-  placeId: string | null
-  excluded: boolean
-}
-
 /** 계산된 구간 정보 */
 export interface Leg {
   fromPlaceId: string

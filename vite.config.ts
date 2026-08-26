@@ -33,6 +33,10 @@ export default defineConfig({
       // 앱 셸(정적 파일)만 담당하고 실시간 데이터는 그대로 네트워크를 탄다.
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // OCR용 tesseract.js 코어·언어 데이터는 이미지 붙여넣기 기능을 쓸 때만 필요한
+        // 무거운(약 12MB) 정적 파일이라, 앱 셸 사전 캐싱 대상에서 제외한다 — 매 방문마다
+        // 모든 사용자에게 미리 받아두게 하면 설치 크기·초기 로드가 불필요하게 커진다.
+        globIgnores: ['tesseract/**'],
       },
     }),
   ],

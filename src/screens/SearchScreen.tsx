@@ -1,15 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
-import { useStore } from '../lib/store'
+import { useStore, uid } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
 import { PLACES, CATEGORIES, PLACE_MAP, CATEGORY_COLOR, registerPlace } from '../data/places'
-import { extractFromImage, matchPlaces, parseText, similarity } from '../lib/importParse'
+import { parseText, similarity, SUPPORTED_IMAGE } from '../lib/importParse'
+import { searchPlacesByQuery } from '../lib/placeSearch'
+import { recognizeImageText } from '../lib/ocr'
 import { geocodeAddress, geocodeResultToPlace } from '../lib/geocode'
 import { searchLocalPlaces } from '../lib/localSearch'
-import type { Category, ImportCandidate, Place } from '../lib/types'
+import type { Category, Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
 import { josa } from '../lib/text'
+
+interface ImportLine {
+  id: string
+  raw: string
+  results: Place[]
+  loading: boolean
+  error?: string
+}
 
 export default function SearchScreen({ courseId }: { courseId?: string }) {
   const store = useStore()
@@ -22,12 +32,10 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   const [geoLoading, setGeoLoading] = useState(false)
   const [categoryPickFor, setCategoryPickFor] = useState<Place | null>(null)
 
-  const [candidates, setCandidates] = useState<ImportCandidate[]>([])
+  const [importLines, setImportLines] = useState<ImportLine[]>([])
   const [pasteText, setPasteText] = useState('')
   const [busy, setBusy] = useState(false)
   const [importError, setImportError] = useState('')
-  const [relinkFor, setRelinkFor] = useState<ImportCandidate | null>(null)
-  const [relinkQuery, setRelinkQuery] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -90,12 +98,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     }
   }, [q, mode])
 
-  const candidatePlaces = candidates
-    .filter((c) => !c.excluded && c.placeId)
-    .map((c) => ({ candidate: c, place: PLACE_MAP[c.placeId as string] }))
-    .filter((x): x is { candidate: ImportCandidate; place: Place } => !!x.place)
-  const failedCandidates = candidates.filter((c) => !c.excluded && !c.placeId)
-
   // 지도 미리보기: 이미 코스에 담은 장소는 계속 남아있고(누적), 지금 검색 중인 결과도 함께 보여줘서
   // 검색해서 찾은 장소가 어디인지 바로 지도에서 확인하고(자동으로 그 위치로 이동) 담을 수 있게 한다.
   const searchMapPlaces = useMemo(() => {
@@ -136,6 +138,28 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     store.toast(`${place.name}${josa(place.name, '을', '를')} 코스에 추가했어요`)
   }
 
+  // 후보 줄 하나를 실제 검색(내장 40곳 + 상호명 검색 + 지오코딩)에 붙여서, 그 줄만의
+  // 검색 결과 목록을 채워 넣는다 — 사용자가 줄마다 나온 후보 중 하나를 직접 골라 담게 한다.
+  const runSearchFor = (lineId: string, raw: string) => {
+    searchPlacesByQuery(raw, 6)
+      .then((results) => {
+        setImportLines((list) => list.map((l) => (l.id === lineId ? { ...l, results, loading: false } : l)))
+      })
+      .catch(() => {
+        setImportLines((list) =>
+          list.map((l) => (l.id === lineId ? { ...l, loading: false, error: '검색 중 문제가 생겼어요.' } : l)),
+        )
+      })
+  }
+
+  const addLines = (raws: string[]) => {
+    const newLines: ImportLine[] = raws.map((raw) => ({ id: uid('il'), raw, results: [], loading: true }))
+    setImportLines((list) => [...list, ...newLines])
+    newLines.forEach((l) => runSearchFor(l.id, l.raw))
+  }
+
+  const removeLine = (id: string) => setImportLines((list) => list.filter((l) => l.id !== id))
+
   const runText = () => {
     if (!pasteText.trim()) {
       setImportError('붙여넣은 텍스트가 없어요.')
@@ -147,18 +171,27 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       setImportError('텍스트에서 장소 후보를 찾지 못했어요. 한 줄에 한 장소씩 입력해보세요.')
       return
     }
-    setCandidates((c) => [...c, ...found])
+    addLines(found)
     setPasteText('')
   }
 
   const runImage = async (file: File) => {
+    if (!SUPPORTED_IMAGE.includes(file.type)) {
+      setImportError('PNG · JPG · WEBP 이미지만 인식할 수 있어요.')
+      return
+    }
     setBusy(true)
     setImportError('')
     try {
-      const found = await extractFromImage(file)
-      setCandidates((c) => [...c, ...found])
+      const text = await recognizeImageText(file)
+      const found = parseText(text)
+      if (found.length === 0) {
+        setImportError('이미지에서 상호명·주소를 인식하지 못했어요. 더 선명한 캡처를 올려보세요.')
+        return
+      }
+      addLines(found)
     } catch (e) {
-      setImportError((e as Error).message)
+      setImportError((e as Error).message || '이미지를 인식하지 못했어요.')
     } finally {
       setBusy(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -339,75 +372,37 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
             텍스트에서 장소 인식
           </button>
 
-          {busy && <div className="banner" style={{ marginTop: 12 }}>이미지에서 장소명을 인식하는 중이에요…</div>}
+          {busy && <div className="banner" style={{ marginTop: 12 }}>이미지에서 글자를 인식하는 중이에요…</div>}
           {importError && (
             <div className="banner alert" style={{ marginTop: 12 }}>
               {importError}
             </div>
           )}
 
-          {candidatePlaces.length === 0 && failedCandidates.length === 0 ? (
+          {importLines.length === 0 ? (
             <div className="tiny muted" style={{ marginTop: 16 }}>
-              캡처 이미지를 올리거나 텍스트를 붙여넣으면 장소 후보가 지도와 함께 카드로 표시돼요. 원본 이미지는 인식 후 보관하지 않아요.
+              캡처 이미지를 올리거나 텍스트를 붙여넣으면 줄마다 검색한 장소 목록이 카드로 표시돼요. 원본 이미지는 인식 후 보관하지 않아요.
             </div>
           ) : (
-            <>
-              <div
-                style={{
-                  position: 'relative',
-                  height: 168,
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  border: '1px solid var(--border)',
-                  margin: '16px 0',
-                }}
-              >
-                <MapCanvas places={candidatePlaces.map((c) => c.place)} showRoute={false} showNumbers={false} />
+            importLines.map((line) => (
+              <div key={line.id} style={{ marginTop: 18 }}>
+                <div className="between" style={{ marginBottom: 8 }}>
+                  <span className="small bold truncate">“{line.raw}”</span>
+                  <button className="textbtn" onClick={() => removeLine(line.id)}>
+                    지우기
+                  </button>
+                </div>
+                {line.loading ? (
+                  <div className="tiny muted">검색하는 중…</div>
+                ) : line.error ? (
+                  <div className="tiny muted">{line.error}</div>
+                ) : line.results.length === 0 ? (
+                  <div className="tiny muted">일치하는 장소를 찾지 못했어요.</div>
+                ) : (
+                  <div className="stack">{line.results.map((p) => resultCard(p))}</div>
+                )}
               </div>
-
-              <div className="section-title">인식된 장소 {candidatePlaces.length}곳</div>
-              {candidatePlaces.map(({ candidate, place }) =>
-                resultCard(
-                  place,
-                  candidate.status === 'ambiguous' ? (
-                    <div className="between" style={{ marginTop: 8 }}>
-                      <span className="tiny muted">인식이 불확실해요 · “{candidate.raw}”</span>
-                      <button
-                        className="btn xs"
-                        onClick={() => {
-                          setRelinkFor(candidate)
-                          setRelinkQuery(candidate.raw)
-                        }}
-                      >
-                        연결 변경
-                      </button>
-                    </div>
-                  ) : undefined,
-                ),
-              )}
-
-              {failedCandidates.length > 0 && (
-                <>
-                  <div className="section-title">인식하지 못한 항목</div>
-                  {failedCandidates.map((c) => (
-                    <div className="card" key={c.id} style={{ padding: 12 }}>
-                      <div className="between">
-                        <span className="small truncate">“{c.raw}”</span>
-                        <button
-                          className="btn xs"
-                          onClick={() => {
-                            setRelinkFor(c)
-                            setRelinkQuery(c.raw)
-                          }}
-                        >
-                          직접 연결
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </>
+            ))
           )}
         </div>
       )}
@@ -420,44 +415,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
           </button>
         </div>
       </div>
-
-      <Modal open={!!relinkFor} onClose={() => setRelinkFor(null)}>
-        <div className="modal-title">연결할 장소 선택</div>
-        <div className="searchbar" style={{ marginBottom: 12 }}>
-          <input value={relinkQuery} onChange={(e) => setRelinkQuery(e.target.value)} placeholder="장소명 검색" />
-        </div>
-        <div className="stack">
-          {matchPlaces(relinkQuery, 6).map(({ place, score }) => (
-            <div
-              className="card tap"
-              key={place.id}
-              style={{ padding: 10 }}
-              onClick={() => {
-                setCandidates((list) =>
-                  list.map((x) =>
-                    x.id === relinkFor?.id ? { ...x, placeId: place.id, status: 'matched', excluded: false } : x,
-                  ),
-                )
-                setRelinkFor(null)
-              }}
-            >
-              <div className="list-item">
-                <Thumb category={place.category} />
-                <div className="body">
-                  <div className="name truncate">{place.name}</div>
-                  <div className="meta truncate">
-                    {place.region} · {place.category}
-                  </div>
-                </div>
-                <span className="pill">{Math.round(score * 100)}%</span>
-              </div>
-            </div>
-          ))}
-          {matchPlaces(relinkQuery, 6).length === 0 && (
-            <div className="tiny muted">일치하는 장소가 없어요. 다른 검색어를 입력해보세요.</div>
-          )}
-        </div>
-      </Modal>
 
       <Modal open={!!categoryPickFor} onClose={() => setCategoryPickFor(null)} center>
         <div className="modal-title">어떤 카테고리인가요?</div>

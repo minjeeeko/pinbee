@@ -1,7 +1,3 @@
-import type { ImportCandidate, Place } from './types'
-import { PLACES } from '../data/places'
-import { uid } from './store'
-
 const normalize = (s: string) =>
   s
     .toLowerCase()
@@ -32,53 +28,13 @@ export function similarity(a: string, b: string) {
   return (2 * hit) / (A.length + B.length)
 }
 
-export function matchPlaces(query: string, limit = 5): { place: Place; score: number }[] {
-  const q = normalize(query)
-  if (!q) return []
-  return PLACES.map((place) => {
-    const name = normalize(place.name)
-    let score = similarity(q, place.name)
-    if (name.includes(q) || q.includes(name)) score = Math.max(score, 0.82)
-    return { place, score }
-  })
-    .filter((r) => r.score > 0.18)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit)
-}
-
-/** 붙여넣은 텍스트에서 장소 후보를 추출한다 */
-export function parseText(text: string): ImportCandidate[] {
+/** 붙여넣거나 이미지에서 인식한 텍스트를 한 줄당 하나의 장소 후보 문자열로 나눈다 */
+export function parseText(text: string): string[] {
   return text
     .split(/[\n,·|]/)
     .map((l) => l.replace(/^[\s\-*·•\d.)\]]+/, '').trim())
     .filter((l) => l.length >= 2)
     .slice(0, 12)
-    .map((raw) => {
-      const best = matchPlaces(raw, 1)[0]
-      if (best && best.score >= 0.6) {
-        return { id: uid('ic'), raw, status: 'matched' as const, placeId: best.place.id, excluded: false }
-      }
-      if (best && best.score >= 0.28) {
-        return { id: uid('ic'), raw, status: 'ambiguous' as const, placeId: best.place.id, excluded: false }
-      }
-      return { id: uid('ic'), raw, status: 'failed' as const, placeId: null, excluded: false }
-    })
 }
 
 export const SUPPORTED_IMAGE = ['image/png', 'image/jpeg', 'image/webp', 'image/heic']
-
-/**
- * 캡처 이미지에서 장소명을 인식한다.
- * 프로토타입에서는 실제 OCR 대신 인식 지연과 결과를 시뮬레이션한다.
- */
-export function extractFromImage(file: File): Promise<ImportCandidate[]> {
-  return new Promise((resolve, reject) => {
-    if (!SUPPORTED_IMAGE.includes(file.type)) {
-      reject(new Error('PNG · JPG · WEBP 이미지만 인식할 수 있어요.'))
-      return
-    }
-    setTimeout(() => {
-      resolve(parseText(['연남 로스터리 커피', '망원 베이커리', '○○분식', '경의선 책거리'].join('\n')))
-    }, 1200)
-  })
-}
