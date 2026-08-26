@@ -41,6 +41,21 @@ supabase functions deploy directions
 시작하는 행만)를 `places`에 추가할 수 있는 RLS 정책을 추가합니다. 처음 설치하는 경우 `schema.sql`에 이미
 반영돼 있어 따로 실행할 필요가 없습니다.
 
+## 상호명 검색(지역 검색) 기능을 새로 받았다면
+
+DB 변경은 없습니다(상호명 검색 결과도 좌표 기반 `p-geo-` id를 그대로 써서, 위 지오코딩 마이그레이션이
+이미 적용돼 있으면 충분합니다). 다만 이 기능은 **NCP가 아니라 Naver Developers(developers.naver.com)**의
+검색 API(지역) 제품을 쓰는 완전히 별개의 자격증명이 필요합니다:
+
+1. developers.naver.com에서 애플리케이션을 만들고 **검색 > 지역** API를 사용 설정한다.
+2. 발급된 Client ID/Secret으로 시크릿을 등록하고 함수를 배포한다:
+```bash
+supabase secrets set NAVER_SEARCH_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx NAVER_SEARCH_CLIENT_SECRET=xxxxxxxxxx
+supabase functions deploy local-search
+```
+`NAVER_MAP_CLIENT_ID`/`NAVER_MAP_CLIENT_SECRET`(NCP)과는 다른 계정·다른 값입니다. 배포하지 않아도 앱은
+그냥 주소 검색(지오코딩)만 되는 상태로 동작하므로 필수는 아닙니다.
+
 ## 스키마 요약
 
 | 테이블 | 역할 |
@@ -117,12 +132,14 @@ SQL Editor는 로그인 세션이 아니라서 셀프 승격 방지 트리거에
   백그라운드 조회한 실제 도로 거리·시간이 도착하면 자동으로 갱신됩니다. 탐색·공개 코스처럼 여러 코스를 한
   번에 보여주는 화면은 API 호출이 늘어나는 걸 막기 위해 항상 직선거리 근사만 씁니다. Edge Function을 배포하지
   않았거나 실패하면 조용히 직선거리 근사로 남습니다(에러를 화면에 띄우지 않습니다).
-- **주소·장소 검색**(`#/search`)에서 찾은 장소는 화면에 뜨는 즉시 클라이언트의 `PLACE_MAP`에 등록되어 내장
-  40곳과 똑같이 코스 추가·저장 장소 담기에 쓸 수 있습니다. 실제 DB에는 곧바로 쓰지 않고, **코스를 저장하거나
-  저장 장소에 담는 시점**(로그인이 필요한 순간)에 비로소 `places`에 없으면 추가합니다 — `course_places`/
-  `saved_places`가 `places.id`를 참조(FK)하기 때문에, 그 전에 반드시 `places` 행이 먼저 있어야 저장이
-  실패하지 않습니다. 좌표 기반 id(`p-geo-{lat}-{lng}`)라 같은 곳을 다시 검색해도 중복 추가되지 않고,
-  다른 기기·세션에서 저장된 코스를 열 때는 `fetchPlacesByIds`로 부족한 장소만 채워 넣습니다.
+- **상호명·주소 검색**(`#/search`)은 상호명 검색(`local-search` Edge Function, Naver Developers 지역 검색
+  API)과 주소 검색(지오코딩, 클라이언트에서 직접)을 동시에 호출해 합칩니다. 찾은 장소는 화면에 뜨는 즉시
+  클라이언트의 `PLACE_MAP`에 등록되어 내장 40곳과 똑같이 코스 추가·저장 장소 담기에 쓸 수 있습니다. 실제
+  DB에는 곧바로 쓰지 않고, **코스를 저장하거나 저장 장소에 담는 시점**(로그인이 필요한 순간)에 비로소
+  `places`에 없으면 추가합니다 — `course_places`/`saved_places`가 `places.id`를 참조(FK)하기 때문에, 그
+  전에 반드시 `places` 행이 먼저 있어야 저장이 실패하지 않습니다. 좌표 기반 id(`p-geo-{lat}-{lng}`)라 같은
+  곳을 상호명으로 찾든 주소로 찾든 같은 장소로 취급되어 중복 추가되지 않고, 다른 기기·세션에서 저장된
+  코스를 열 때는 `fetchPlacesByIds`로 부족한 장소만 채워 넣습니다.
 - `.env.local`에 `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`가 없으면(`.env.example` 참고) 회원가입·로그인·
   DB 저장이 전부 비활성화되고, 공개 코스·저장 장소가 빈 채로 화면 구조만 볼 수 있는 오프라인 모드로 동작합니다.
 
@@ -139,6 +156,12 @@ Playwright로 검증하는 과정에서 실제 버그 두 개를 찾아 고쳤�
 흉내 내(지연 시간을 일부러 줘서) 검증했습니다: 12km 넘게 떨어진 두 장소를 자동차 구간으로 추가하면 처음엔
 직선거리 근사(15.5km)가 바로 뜨고, 백그라운드 조회가 끝나면 자동으로 실제 경로 값(21.6km)으로 화면이
 갱신되는 것까지 확인했습니다. `directions` Edge Function 자체의 NCP 응답 파싱 로직도 정상/에러/형식이
-다른 응답 세 가지 모두 별도로 단위 검증했습니다. 다만 이 전부가 목(mock) 기반 검증이고 이 샌드박스에서는
-NCP 서버로 실제 네트워크 요청을 보낼 수 없어서, **실제 프로젝트 URL·anon key, 실제 네이버 지도 Client ID로,
-그리고 `directions` Edge Function을 배포한 뒤에 한 번은 라이브로 확인하는 걸 추천합니다.**
+다른 응답 세 가지 모두 별도로 단위 검증했습니다. 상호명 검색(`local-search`)도 같은 방식으로
+`functions.invoke`를 가짜로 흉내 내 검증했습니다: "스타벅스 강남점"으로 검색 → "실제 장소·주소 검색 결과"
+카드에 업종 키워드로 추정한 카테고리("음식점>카페,디저트" → "카페")까지 정확히 뜨는지 → 코스에 추가까지
+확인했고, `local-search` Edge Function의 응답 파싱(제목의 `<b>` 태그 제거, `mapx`/`mapy` → 경도/위도 변환,
+좌표 0인 잘못된 항목 제외)도 별도로 단위 검증했습니다. 다만 이 전부가 목(mock) 기반 검증이고 이 샌드박스에서는
+NCP·Naver 서버로 실제 네트워크 요청을 보낼 수 없어서, **실제 프로젝트 URL·anon key, 실제 네이버 지도/검색
+API Client ID로, 그리고 Edge Function들을 배포한 뒤에 한 번은 라이브로 확인하는 걸 추천합니다.** 특히
+`local-search`의 `mapx`/`mapy` → 위도·경도 변환(10^7로 나누는 방식)은 Naver 지역 검색 API 문서 기준으로
+구현했지만 라이브로 좌표가 실제 위치와 맞는지 꼭 확인해보세요 — 어긋나면 이 변환 로직부터 의심하시면 됩니다.

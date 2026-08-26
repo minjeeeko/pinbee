@@ -5,6 +5,7 @@ import { courseHasPlace } from '../lib/course'
 import { PLACES, CATEGORIES, PLACE_MAP, registerPlace } from '../data/places'
 import { extractFromImage, matchPlaces, parseText, similarity } from '../lib/importParse'
 import { geocodeAddress, geocodeResultToPlace } from '../lib/geocode'
+import { searchLocalPlaces } from '../lib/localSearch'
 import type { Category, ImportCandidate, Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
@@ -45,7 +46,9 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       .map((r) => r.p)
   }, [q, cat])
 
-  // 내장 40곳에서 못 찾았을 수 있는 실제 주소/장소를 네이버 지오코딩으로 찾아 보완한다.
+  // 내장 40곳에서 못 찾았을 수 있는 실제 상호명·주소를 두 API로 함께 찾아 보완한다.
+  // - searchLocalPlaces: 상호명 검색(네이버 지역 검색) — "스타벅스 강남점"처럼 이름으로 찾을 때
+  // - geocodeAddress: 주소 검색(NCP 지오코딩) — 지번·도로명 주소를 그대로 입력했을 때
   // 검색어를 잠깐 멈췄을 때만 요청해 타이핑 중 API를 과도하게 호출하지 않는다.
   useEffect(() => {
     const query = q.trim()
@@ -57,10 +60,21 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     let cancelled = false
     setGeoLoading(true)
     const timer = setTimeout(() => {
-      geocodeAddress(query)
-        .then((found) => {
+      Promise.all([
+        searchLocalPlaces(query).catch(() => [] as Place[]),
+        geocodeAddress(query)
+          .then((found) => found.slice(0, 5).map((r) => geocodeResultToPlace(r, query)))
+          .catch(() => [] as Place[]),
+      ])
+        .then(([local, geocoded]) => {
           if (cancelled) return
-          setGeoResults(found.slice(0, 5).map((r) => geocodeResultToPlace(r, query)))
+          // 상호명 검색 결과를 우선하고, 좌표가 거의 같은(약 11m 이내) 주소 검색 결과는 중복이라 뺀다
+          const merged = [...local]
+          for (const g of geocoded) {
+            const isDup = merged.some((m) => Math.abs(m.lat - g.lat) < 0.0001 && Math.abs(m.lng - g.lng) < 0.0001)
+            if (!isDup) merged.push(g)
+          }
+          setGeoResults(merged.slice(0, 8))
         })
         .catch(() => {
           if (!cancelled) setGeoResults([])
@@ -247,11 +261,11 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
               results.map((p) => resultCard(p))
             )}
 
-            {geoLoading && <div className="tiny muted" style={{ marginTop: 16 }}>주소로 찾는 중…</div>}
+            {geoLoading && <div className="tiny muted" style={{ marginTop: 16 }}>상호명·주소로 찾는 중…</div>}
             {geoResults.length > 0 && (
               <>
                 <div className="section-title" style={{ marginTop: 16 }}>
-                  주소로 찾은 장소
+                  실제 장소·주소 검색 결과
                 </div>
                 {geoResults.map((p) => resultCard(p))}
               </>

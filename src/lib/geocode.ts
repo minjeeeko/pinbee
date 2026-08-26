@@ -10,7 +10,8 @@ export interface GeocodeResult {
   lng: number
 }
 
-function extractRegion(address: string): string {
+/** '서울 마포구 …' 같은 주소에서 앱이 쓰는 지역명 표기('마포')를 뽑아낸다. 상호명 검색 결과에도 재사용한다 */
+export function extractRegion(address: string): string {
   const m = address.match(/([가-힣]{2,6}(구|군|시))/)
   return m ? m[1].replace(/(구|군|시)$/, '') : '기타 지역'
 }
