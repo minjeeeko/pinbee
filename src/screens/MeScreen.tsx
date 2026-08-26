@@ -14,44 +14,51 @@ export default function MeScreen() {
   const [uploading, setUploading] = useState(false)
 
   const [name, setName] = useState(user?.name ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const [editingInfo, setEditingInfo] = useState(false)
   const [ageGroup, setAgeGroup] = useState(user?.ageGroup ?? null)
   const [referralSource, setReferralSource] = useState(user?.referralSource ?? null)
   const [expectedFeatures, setExpectedFeatures] = useState<string[]>(user?.expectedFeatures ?? [])
-  const [saving, setSaving] = useState(false)
-
-  const [editingPrefs, setEditingPrefs] = useState(false)
   const [transport, setTransport] = useState<Transport | 'mixed'>(store.prefs.transport)
   const [categories, setCategories] = useState<Category[]>(store.prefs.categories)
+  const [savingInfo, setSavingInfo] = useState(false)
 
-  const openPrefsEditor = () => {
+  const openInfoEditor = () => {
+    setAgeGroup(user?.ageGroup ?? null)
+    setReferralSource(user?.referralSource ?? null)
+    setExpectedFeatures(user?.expectedFeatures ?? [])
     setTransport(store.prefs.transport)
     setCategories(store.prefs.categories)
-    setEditingPrefs(true)
+    setEditingInfo(true)
   }
-
-  const toggleCategory = (c: Category) =>
-    setCategories((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]))
-
-  const savePrefs = () => {
-    store.setPrefs({ ...store.prefs, transport, categories })
-    store.toast('내 정보를 저장했어요')
-    setEditingPrefs(false)
-  }
-
-  const dirty =
-    !!user &&
-    (name !== user.name ||
-      ageGroup !== user.ageGroup ||
-      referralSource !== user.referralSource ||
-      expectedFeatures.join() !== user.expectedFeatures.join())
 
   const toggleFeature = (f: string) =>
     setExpectedFeatures((fs) => (fs.includes(f) ? fs.filter((x) => x !== f) : [...fs, f]))
 
+  const toggleCategory = (c: Category) =>
+    setCategories((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]))
+
+  const saveInfo = async () => {
+    setSavingInfo(true)
+    try {
+      await store.updateProfile({ ageGroup, referralSource, expectedFeatures })
+      store.setPrefs({ ...store.prefs, transport, categories })
+      store.toast('내 정보를 저장했어요')
+      setEditingInfo(false)
+    } catch {
+      store.toast('저장에 실패했어요. 다시 시도해주세요')
+    } finally {
+      setSavingInfo(false)
+    }
+  }
+
+  const nameDirty = !!user && name !== user.name
+
   const save = async () => {
     setSaving(true)
     try {
-      await store.updateProfile({ name: name.trim(), ageGroup, referralSource, expectedFeatures })
+      await store.updateProfile({ name: name.trim() })
       store.toast('프로필을 저장했어요')
     } catch {
       store.toast('저장에 실패했어요. 다시 시도해주세요')
@@ -139,53 +146,53 @@ export default function MeScreen() {
           <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
         </label>
 
-        <div className="field">
-          <span className="label">연령대</span>
-          <div className="chips">
-            {AGE_GROUPS.map((a) => (
-              <button key={a} className={`chip sm${ageGroup === a ? ' on' : ''}`} onClick={() => setAgeGroup(a)}>
-                {a}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <span className="label">어떻게 알고 오셨어요?</span>
-          <div className="chips">
-            {REFERRAL_SOURCES.map((r) => (
-              <button
-                key={r}
-                className={`chip sm${referralSource === r ? ' on' : ''}`}
-                onClick={() => setReferralSource(r)}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="field">
-          <span className="label">기대하는 기능 (복수 선택)</span>
-          <div className="chips">
-            {EXPECTED_FEATURES.map((f) => (
-              <button
-                key={f}
-                className={`chip sm${expectedFeatures.includes(f) ? ' on' : ''}`}
-                onClick={() => toggleFeature(f)}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <button className="btn primary block" disabled={!dirty || saving} onClick={save} style={{ marginTop: 8 }}>
+        <button className="btn primary block" disabled={!nameDirty || saving} onClick={save} style={{ marginTop: 8 }}>
           {saving ? '저장 중…' : '프로필 저장'}
         </button>
 
-        {editingPrefs ? (
+        {editingInfo ? (
           <div className="card" style={{ padding: 14, marginTop: 24 }}>
+            <div className="field">
+              <span className="label">연령대</span>
+              <div className="chips">
+                {AGE_GROUPS.map((a) => (
+                  <button key={a} className={`chip sm${ageGroup === a ? ' on' : ''}`} onClick={() => setAgeGroup(a)}>
+                    {a}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <span className="label">어떻게 알고 오셨어요?</span>
+              <div className="chips">
+                {REFERRAL_SOURCES.map((r) => (
+                  <button
+                    key={r}
+                    className={`chip sm${referralSource === r ? ' on' : ''}`}
+                    onClick={() => setReferralSource(r)}
+                  >
+                    {r}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <span className="label">기대하는 기능 (복수 선택)</span>
+              <div className="chips">
+                {EXPECTED_FEATURES.map((f) => (
+                  <button
+                    key={f}
+                    className={`chip sm${expectedFeatures.includes(f) ? ' on' : ''}`}
+                    onClick={() => toggleFeature(f)}
+                  >
+                    {f}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="field">
               <span className="label">주로 어떻게 이동하세요?</span>
               <div className="chips">
@@ -200,31 +207,29 @@ export default function MeScreen() {
                 ))}
               </div>
             </div>
+
             <div className="field">
               <span className="label">좋아하는 장소 유형</span>
               <div className="chips">
                 {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    className={`chip sm${categories.includes(c) ? ' on' : ''}`}
-                    onClick={() => toggleCategory(c)}
-                  >
+                  <button key={c} className={`chip sm${categories.includes(c) ? ' on' : ''}`} onClick={() => toggleCategory(c)}>
                     {c}
                   </button>
                 ))}
               </div>
             </div>
+
             <div className="row" style={{ marginTop: 4 }}>
-              <button className="btn" onClick={() => setEditingPrefs(false)}>
+              <button className="btn" onClick={() => setEditingInfo(false)}>
                 취소
               </button>
-              <button className="btn primary" onClick={savePrefs}>
-                저장
+              <button className="btn primary" disabled={savingInfo} onClick={saveInfo}>
+                {savingInfo ? '저장 중…' : '저장'}
               </button>
             </div>
           </div>
         ) : (
-          <button className="btn outline block" style={{ marginTop: 24 }} onClick={openPrefsEditor}>
+          <button className="btn outline block" style={{ marginTop: 24 }} onClick={openInfoEditor}>
             내 정보 수정하기
           </button>
         )}
