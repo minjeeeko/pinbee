@@ -44,17 +44,23 @@ supabase functions deploy directions
 ## 상호명 검색(지역 검색) 기능을 새로 받았다면
 
 DB 변경은 없습니다(상호명 검색 결과도 좌표 기반 `p-geo-` id를 그대로 써서, 위 지오코딩 마이그레이션이
-이미 적용돼 있으면 충분합니다). 다만 이 기능은 **NCP가 아니라 Naver Developers(developers.naver.com)**의
-검색 API(지역) 제품을 쓰는 완전히 별개의 자격증명이 필요합니다:
+이미 적용돼 있으면 충분합니다). 이 기능은 **NCP 콘솔의 NAVER API HUB**(예전 Naver Developers Center의
+검색 API가 이관된 서비스)를 씁니다 — developers.naver.com이 아니라 **console.ncloud.com** 안에 있습니다.
+예전 Naver Developers Center에서 발급받은 Client ID/Secret은 이 API 호출에 쓸 수 없고, 호출 주소와 인증
+헤더 이름도 다릅니다(`X-Naver-Client-Id` → `X-NCP-APIGW-API-KEY-ID`, 도메인도
+`openapi.naver.com` → `naverapihub.apigw.ntruss.com`으로 바뀝니다). 설정 순서:
 
-1. developers.naver.com에서 애플리케이션을 만들고 **검색 > 지역** API를 사용 설정한다.
-2. 발급된 Client ID/Secret으로 시크릿을 등록하고 함수를 배포한다:
+1. NCP 콘솔 > **Menu > All Services > Application Services > NAVER API HUB** > 신청하기에서 서비스 이용을 신청한다.
+2. NAVER API HUB의 **Application** 메뉴에서 Application을 등록(또는 지도용 Application에 API를 추가)하고 **검색 > 지역** API를 선택한다.
+3. 그 Application의 [인증 정보]에서 발급된 Client ID/Secret으로 시크릿을 등록하고 함수를 배포한다:
 ```bash
 supabase secrets set NAVER_SEARCH_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx NAVER_SEARCH_CLIENT_SECRET=xxxxxxxxxx
 supabase functions deploy local-search
 ```
-`NAVER_MAP_CLIENT_ID`/`NAVER_MAP_CLIENT_SECRET`(NCP)과는 다른 계정·다른 값입니다. 배포하지 않아도 앱은
-그냥 주소 검색(지오코딩)만 되는 상태로 동작하므로 필수는 아닙니다.
+`NAVER_MAP_CLIENT_ID`/`NAVER_MAP_CLIENT_SECRET`(Dynamic Map·Geocoding용)과 같은 NCP Application의 값을
+써도 되고, 새 Application을 따로 만들어도 됩니다 — 어느 쪽이든 **NAVER API HUB Application 화면**에서
+발급된 값이어야 합니다. 배포하지 않아도 앱은 그냥 주소 검색(지오코딩)만 되는 상태로 동작하므로 필수는
+아닙니다.
 
 ## 스키마 요약
 
@@ -132,8 +138,8 @@ SQL Editor는 로그인 세션이 아니라서 셀프 승격 방지 트리거에
   백그라운드 조회한 실제 도로 거리·시간이 도착하면 자동으로 갱신됩니다. 탐색·공개 코스처럼 여러 코스를 한
   번에 보여주는 화면은 API 호출이 늘어나는 걸 막기 위해 항상 직선거리 근사만 씁니다. Edge Function을 배포하지
   않았거나 실패하면 조용히 직선거리 근사로 남습니다(에러를 화면에 띄우지 않습니다).
-- **상호명·주소 검색**(`#/search`)은 상호명 검색(`local-search` Edge Function, Naver Developers 지역 검색
-  API)과 주소 검색(지오코딩, 클라이언트에서 직접)을 동시에 호출해 합칩니다. 찾은 장소는 화면에 뜨는 즉시
+- **상호명·주소 검색**(`#/search`)은 상호명 검색(`local-search` Edge Function, NCP NAVER API HUB의 검색 >
+  지역 API)과 주소 검색(지오코딩, 클라이언트에서 직접)을 동시에 호출해 합칩니다. 찾은 장소는 화면에 뜨는 즉시
   클라이언트의 `PLACE_MAP`에 등록되어 내장 40곳과 똑같이 코스 추가·저장 장소 담기에 쓸 수 있습니다. 실제
   DB에는 곧바로 쓰지 않고, **코스를 저장하거나 저장 장소에 담는 시점**(로그인이 필요한 순간)에 비로소
   `places`에 없으면 추가합니다 — `course_places`/`saved_places`가 `places.id`를 참조(FK)하기 때문에, 그
@@ -163,5 +169,9 @@ Playwright로 검증하는 과정에서 실제 버그 두 개를 찾아 고쳤�
 좌표 0인 잘못된 항목 제외)도 별도로 단위 검증했습니다. 다만 이 전부가 목(mock) 기반 검증이고 이 샌드박스에서는
 NCP·Naver 서버로 실제 네트워크 요청을 보낼 수 없어서, **실제 프로젝트 URL·anon key, 실제 네이버 지도/검색
 API Client ID로, 그리고 Edge Function들을 배포한 뒤에 한 번은 라이브로 확인하는 걸 추천합니다.** 특히
-`local-search`의 `mapx`/`mapy` → 위도·경도 변환(10^7로 나누는 방식)은 Naver 지역 검색 API 문서 기준으로
-구현했지만 라이브로 좌표가 실제 위치와 맞는지 꼭 확인해보세요 — 어긋나면 이 변환 로직부터 의심하시면 됩니다.
+`local-search`의 `mapx`/`mapy` → 위도·경도 변환(10^7로 나누는 방식)과 응답 필드 구조(`items[].title` 등)는
+Naver 지역 검색 API 문서 기준으로 구현했는데, NAVER API HUB로 이관되면서 호출 주소·인증 헤더는 확실히
+바뀌었지만 응답 바디 구조까지 그대로인지는 NCP의 이관 가이드에도 "API별 확인 필요"라고만 나와 있어서
+확실치 않습니다(엔드포인트 경로 `/search/v1/local`도 뉴스 검색 예시로 유추한 값이라 실제와 다를 수 있어요).
+라이브로 검색했을 때 결과가 하나도 안 뜨거나 좌표가 이상하면, `local-search` 함수 로그에서 실제 응답 JSON을
+확인해서 `parseLocalSearchResponse`의 필드명을 그에 맞게 고쳐야 할 수 있습니다.

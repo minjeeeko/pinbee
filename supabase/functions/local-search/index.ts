@@ -1,12 +1,15 @@
 // Supabase Edge Function: 네이버 지역 검색(상호명 검색) API 프록시.
 //
 // NCP Maps의 Geocoding은 "주소 -> 좌표"만 되고, "스타벅스 강남점" 같은 상호명 검색은 되지 않는다.
-// 상호명 검색은 NCP가 아니라 Naver Developers(developers.naver.com)의 검색 API(지역) 제품이고,
-// 완전히 다른 자격증명(Client ID/Secret)을 쓴다. 이 API도 REST 전용이라 Secret이 필요해서,
-// 브라우저에서 직접 부르면 노출된다 — 그래서 directions와 같은 방식으로 Edge Function이 대신 호출한다.
+// 상호명 검색은 NCP API HUB(예전 Naver Developers Center의 검색 API가 이관된 것)의 검색 > 지역 API를 쓴다.
+// 이 API도 REST 전용이라 Secret이 필요해서, 브라우저에서 직접 부르면 노출된다 — 그래서 directions와
+// 같은 방식으로 Edge Function이 대신 호출한다.
 //
-// 배포 전 Supabase 프로젝트에 시크릿을 등록해야 한다 (developers.naver.com에서 만든 애플리케이션의
-// 검색 API용 Client ID/Secret — NCP Maps의 Client ID/Secret과는 다른 값이다):
+// 주의: NAVER API HUB는 예전 openapi.naver.com(X-Naver-Client-Id 헤더) 방식과 호출 주소·인증 헤더가
+// 다르다. 반드시 NCP 콘솔 > NAVER API HUB > Application에서 발급된 Client ID/Secret을 써야 하고
+// (developers.naver.com의 옛 자격증명은 안 먹는다), 헤더도 X-NCP-APIGW-API-KEY-ID / X-NCP-APIGW-API-KEY다.
+//
+// 배포 전 Supabase 프로젝트에 시크릿을 등록해야 한다:
 //   supabase secrets set NAVER_SEARCH_CLIENT_ID=xxxxxxxxxxxxxxxxxxxx NAVER_SEARCH_CLIENT_SECRET=xxxxxxxxxx
 // 배포:
 //   supabase functions deploy local-search
@@ -86,19 +89,21 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Naver 검색 API Client ID/Secret이 설정되지 않았어요 (supabase secrets set 필요).' }, 500)
   }
 
-  const url = new URL('https://openapi.naver.com/v1/search/local.json')
+  const url = new URL('https://naverapihub.apigw.ntruss.com/search/v1/local')
   url.searchParams.set('query', query)
   url.searchParams.set('display', '5')
 
   try {
     const res = await fetch(url, {
       headers: {
-        'X-Naver-Client-Id': clientId,
-        'X-Naver-Client-Secret': clientSecret,
+        'X-NCP-APIGW-API-KEY-ID': clientId,
+        'X-NCP-APIGW-API-KEY': clientSecret,
       },
     })
     if (!res.ok) {
-      return json({ error: `네이버 검색 API 오류 (${res.status})` }, 502)
+      // 원인 파악이 쉽도록 응답 본문 일부를 에러 메시지에 그대로 담는다
+      const bodyText = await res.text().catch(() => '')
+      return json({ error: `네이버 검색 API 오류 (${res.status}) ${bodyText.slice(0, 200)}` }, 502)
     }
     const data = await res.json()
     return json({ items: parseLocalSearchResponse(data) }, 200)
