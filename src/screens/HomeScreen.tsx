@@ -26,6 +26,9 @@ export default function HomeScreen() {
   if (!course || !stats) {
     return (
       <div className="screen">
+        <div className="appbar">
+          <span className="logo">routiz</span>
+        </div>
         <div className="scroll pad">
           <Empty
             title="편집 중인 코스가 없어요"
@@ -65,6 +68,7 @@ export default function HomeScreen() {
         />
 
         <div className="map-float" style={{ top: 10 }}>
+          <span className="logo">routiz</span>
           <button className="searchbar" style={{ flex: 1 }} onClick={() => navigate('/search/' + course.id)}>
             <span className="placeholder">장소·지역 검색</span>
           </button>
