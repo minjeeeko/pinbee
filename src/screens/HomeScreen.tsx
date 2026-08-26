@@ -86,7 +86,7 @@ export default function HomeScreen() {
           insetBottom={16}
         />
 
-        <div className="map-float" style={{ top: 14, left: 8, right: 12, gap: 6 }}>
+        <div className="map-float" style={{ top: 22, left: 8, right: 12, gap: 6 }}>
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png"
             alt="routiz"
