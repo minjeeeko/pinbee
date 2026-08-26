@@ -38,21 +38,7 @@ export default function ExploreScreen() {
   return (
     <div className="screen">
       <div className="appbar" style={{ paddingBottom: 0 }}>
-        <h1 className="hero">탐색</h1>
-        <div className="spacer" />
-        {store.user && (
-          <button className="btn xs" onClick={() => navigate('/my-courses')}>
-            내 코스
-          </button>
-        )}
-        {store.draft && store.draft.places.length > 0 && (
-          <button className="btn xs" style={{ marginLeft: 6 }} onClick={() => navigate('/')}>
-            담은 장소 {store.draft.places.length}곳
-          </button>
-        )}
-      </div>
-
-      <div className="appbar" style={{ paddingTop: 12 }}>
+        <span className="logo">routiz</span>
         <div className="searchbar" style={{ flex: 1 }}>
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="공개 코스 검색 · 코스명, 지역" />
           {q && (
@@ -62,6 +48,21 @@ export default function ExploreScreen() {
           )}
         </div>
       </div>
+
+      {(store.user || (store.draft && store.draft.places.length > 0)) && (
+        <div className="appbar" style={{ paddingTop: 8, justifyContent: 'flex-end' }}>
+          {store.user && (
+            <button className="btn xs" onClick={() => navigate('/my-courses')}>
+              내 코스
+            </button>
+          )}
+          {store.draft && store.draft.places.length > 0 && (
+            <button className="btn xs" style={{ marginLeft: 6 }} onClick={() => navigate('/')}>
+              담은 장소 {store.draft.places.length}곳
+            </button>
+          )}
+        </div>
+      )}
 
       <div style={{ padding: '0 20px' }}>
         <div className="chips" style={{ marginBottom: 6 }}>

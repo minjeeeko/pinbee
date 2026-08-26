@@ -1,56 +1,11 @@
-/* SUIT — https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0 */
+/* Wanted Sans Variable — 로고를 제외한 앱 전체 기본 글꼴. @import는 파일 맨 앞에 와야 한다 */
+@import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
+
+/* 제주돌담체 — 로고("routiz") 전용 글꼴 */
 @font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Thin.woff2') format('woff2');
-  font-weight: 100;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraLight.woff2') format('woff2');
-  font-weight: 200;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Light.woff2') format('woff2');
-  font-weight: 300;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Regular.woff2') format('woff2');
+  font-family: 'JejuStoneWall';
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@1.0/EF_jejudoldam.woff2') format('woff2');
   font-weight: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Medium.woff2') format('woff2');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-SemiBold.woff2') format('woff2');
-  font-weight: 600;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Bold.woff2') format('woff2');
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-ExtraBold.woff2') format('woff2');
-  font-weight: 800;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Suit';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_suit@1.0/SUIT-Heavy.woff2') format('woff2');
-  font-weight: 900;
   font-display: swap;
 }
 
@@ -101,7 +56,7 @@ body {
   margin: 0;
   background: #ffffff;
   color: var(--fg);
-  font-family: 'Suit', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+  font-family: 'Wanted Sans Variable', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 21px;
@@ -191,6 +146,14 @@ input, textarea { -webkit-appearance: none; }
 .appbar h1.hero { font-size: 28px; line-height: 42px; }
 .appbar .sub { font-size: 12px; line-height: 18px; color: var(--muted); font-weight: 400; }
 .appbar .spacer { flex: 1; }
+.logo {
+  flex: none;
+  font-family: 'JejuStoneWall', 'Wanted Sans Variable', sans-serif;
+  font-size: 22px;
+  font-weight: normal;
+  color: var(--ink);
+  letter-spacing: 0.5px;
+}
 
 .textbtn {
   flex: none;
