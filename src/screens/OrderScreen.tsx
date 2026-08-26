@@ -65,11 +65,8 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
               <div>
                 <div
                   className={`card${active === i || dragging ? ' selected' : ''}`}
-                  style={{ padding: 12, cursor: 'grab' }}
+                  style={{ padding: 12 }}
                   onClick={() => setActive(i)}
-                  onPointerDown={handle.onPointerDown}
-                  role={handle.role}
-                  aria-label={handle['aria-label']}
                 >
                   <div className="list-item">
                     <span className={`num${active === i ? '' : ' ghost'}`}>{i + 1}</span>
@@ -78,6 +75,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                       <div className="meta truncate">{place?.category}</div>
                     </div>
                     <Thumb category={place?.category} />
+                    <span {...handle}>순서</span>
                     <button
                       className="btn xs"
                       onPointerDown={(e) => e.stopPropagation()}

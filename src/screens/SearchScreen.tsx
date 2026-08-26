@@ -16,7 +16,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   const course = courseId ? store.getCourse(courseId) : store.draft
   const [mode, setMode] = useState<'search' | 'image'>('search')
   const [q, setQ] = useState('')
-  const [cat, setCat] = useState<Category | '전체'>('전체')
   const [dupTarget, setDupTarget] = useState<Place | null>(null)
 
   const [geoResults, setGeoResults] = useState<Place[]>([])
@@ -30,12 +29,12 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   const [relinkFor, setRelinkFor] = useState<ImportCandidate | null>(null)
   const [relinkQuery, setRelinkQuery] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const results = useMemo(() => {
     const query = q.trim()
     if (!query) return []
-    return PLACES.filter((p) => (cat === '전체' ? true : p.category === cat))
-      .map((p) => {
+    return PLACES.map((p) => {
         const hay = `${p.name} ${p.region} ${p.address} ${p.category}`
         const contains = hay.includes(query)
         const score = contains ? 1 : Math.max(similarity(query, p.name), similarity(query, p.region))
@@ -45,7 +44,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 30)
       .map((r) => r.p)
-  }, [q, cat])
+  }, [q])
 
   // 내장 40곳에서 못 찾았을 수 있는 실제 상호명·주소를 두 API로 함께 찾아 보완한다.
   // - searchLocalPlaces: 상호명 검색(네이버 지역 검색) — "스타벅스 강남점"처럼 이름으로 찾을 때
@@ -61,6 +60,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     let cancelled = false
     setGeoLoading(true)
     const timer = setTimeout(() => {
+      inputRef.current?.blur()
       Promise.all([
         searchLocalPlaces(query).catch(() => [] as Place[]),
         geocodeAddress(query)
@@ -230,8 +230,9 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
         <button className="textbtn" onClick={goBack}>
           뒤로
         </button>
-        <div className="searchbar" style={{ flex: 1 }}>
+        <div className="searchbar" style={{ flex: 1, minWidth: 0 }}>
           <input
+            ref={inputRef}
             autoFocus
             value={q}
             onChange={(e) => {
@@ -261,14 +262,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
 
       {mode === 'search' && q.trim() !== '' && (
         <>
-          <div className="chips" style={{ padding: '10px 20px' }}>
-            {(['전체', ...CATEGORIES] as const).map((c) => (
-              <button key={c} className={`chip sm${cat === c ? ' on' : ''}`} onClick={() => setCat(c)}>
-                {c}
-              </button>
-            ))}
-          </div>
-
           <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
             <MapCanvas places={searchMapPlaces} showRoute={false} showNumbers={false} />
           </div>
@@ -279,13 +272,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
                 title="검색 결과가 없어요"
                 desc="검색어의 철자를 확인하거나 카테고리 조건을 바꿔보세요."
                 action={
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      setQ('')
-                      setCat('전체')
-                    }}
-                  >
+                  <button className="btn" onClick={() => setQ('')}>
                     조건 초기화
                   </button>
                 }

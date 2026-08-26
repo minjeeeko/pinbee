@@ -116,12 +116,12 @@ export function Empty({ title, desc, action }: { title: string; desc?: string; a
   )
 }
 
-/** 장소 대표 이미지 자리. 이미지가 없으니 카테고리에 맞는 아이콘을 그 카테고리 색으로 보여준다 */
+/** 장소 대표 이미지 자리. 이미지가 없으니 카테고리 이모지를 그 카테고리 색 배경으로 보여준다 */
 export function Thumb({ size = '', category }: { size?: string; category?: Category }) {
   if (!category) return <span className={`thumb ${size}`} />
   const color = CATEGORY_COLOR[category]
   return (
-    <span className={`thumb ${size}`} style={{ background: `${color}1a`, borderColor: `${color}40`, color }}>
+    <span className={`thumb ${size}`} style={{ background: `${color}1a`, borderColor: `${color}40` }}>
       <CategoryIcon category={category} size={size === 'lg' ? 26 : 20} />
     </span>
   )

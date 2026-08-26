@@ -4,7 +4,8 @@ import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
-import { Empty, Thumb } from '../components/ui'
+import { Empty } from '../components/ui'
+import { CategoryIcon } from '../components/CategoryIcon'
 import { PlaceEditorModal } from '../components/common'
 
 export default function HomeScreen() {
@@ -123,14 +124,23 @@ export default function HomeScreen() {
                   <div
                     key={cp.uid}
                     className="card tap"
-                    style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
+                    style={{
+                      flex: 'none',
+                      width: 152,
+                      padding: 10,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                    }}
                     onClick={() => setEditing(cp.uid)}
                   >
-                    <Thumb category={place?.category} />
-                    <div className="name truncate" style={{ marginTop: 6 }}>
-                      {place?.name}
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                      <div className="name truncate" style={{ fontWeight: 700, fontSize: 14, lineHeight: '19px' }}>
+                        {place?.name}
+                      </div>
+                      {place && <CategoryIcon category={place.category} size={17} />}
                     </div>
-                    <div className="meta truncate">{place?.category}</div>
+                    <div className="meta truncate" style={{ fontSize: 12 }}>{place?.category}</div>
                   </div>
                 )
               })}
