@@ -158,6 +158,7 @@ export default function HomeScreen() {
                       flexDirection: 'column',
                       gap: 5,
                       overflow: 'hidden',
+                      marginTop: 0,
                     }}
                     onClick={() => setEditing(cp.uid)}
                   >
