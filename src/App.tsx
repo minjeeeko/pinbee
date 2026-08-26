@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { navigate, useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { Toasts } from './components/ui'
+import { SplashScreen } from './components/SplashScreen'
 import HomeScreen from './screens/HomeScreen'
 import EditScreen from './screens/EditScreen'
 import OrderScreen from './screens/OrderScreen'
@@ -30,6 +31,14 @@ export default function App() {
   const route = useRoute()
   const store = useStore()
   const [head, param] = route.segments
+
+  // 최소 노출 시간(짧게 깜빡였다 사라지는 걸 막기 위해) + 실제 로그인 확인이 끝날 때까지 스플래시를 띄운다
+  const [minTimeDone, setMinTimeDone] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeDone(true), 1200)
+    return () => clearTimeout(t)
+  }, [])
+  const showSplash = !minTimeDone || store.authLoading
 
   useEffect(() => {
     if (!window.location.hash) navigate('/', true)
@@ -111,6 +120,7 @@ export default function App() {
           </nav>
         )}
         <Toasts />
+        {showSplash && <SplashScreen />}
       </div>
     </div>
   )

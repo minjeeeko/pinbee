@@ -31,7 +31,7 @@ export default function HomeScreen() {
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png"
             alt="routiz"
-            style={{ height: 24, width: 'auto', flexShrink: 0 }}
+            style={{ height: 44, width: 'auto', flexShrink: 0 }}
           />
         </div>
         <div className="scroll pad">
@@ -78,7 +78,7 @@ export default function HomeScreen() {
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png"
             alt="routiz"
-            style={{ height: 24, width: 'auto', flexShrink: 0 }}
+            style={{ height: 44, width: 'auto', flexShrink: 0 }}
           />
           <button className="searchbar" style={{ flex: 1 }} onClick={() => navigate('/search/' + course.id)}>
             <span className="placeholder">장소·지역 검색</span>
