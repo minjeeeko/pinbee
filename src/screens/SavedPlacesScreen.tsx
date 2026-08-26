@@ -64,7 +64,7 @@ export default function SavedPlacesScreen() {
           position: 'relative',
           height: 190,
           margin: '0 20px',
-          borderRadius: 16,
+          borderRadius: 0,
           overflow: 'hidden',
           border: '1px solid var(--border)',
         }}

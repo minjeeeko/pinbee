@@ -86,7 +86,7 @@ export default function HomeScreen() {
           insetBottom={16}
         />
 
-        <div className="map-float" style={{ top: 22, left: 8, right: 12, gap: 6 }}>
+        <div className="map-float" style={{ top: 8, left: 8, right: 12, gap: 6 }}>
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png"
             alt="routiz"
@@ -170,7 +170,21 @@ export default function HomeScreen() {
                       </div>
                       {place && <CategoryIcon category={place.category} size={17} />}
                     </div>
-                    <div className="meta truncate" style={{ fontSize: 12 }}>{place?.category}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <span
+                        aria-hidden
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: 999,
+                          flexShrink: 0,
+                          background: cp.memo ? '#fbe100' : 'transparent',
+                        }}
+                      />
+                      <span className="meta truncate" style={{ fontSize: 12 }}>
+                        {place?.category}
+                      </span>
+                    </div>
                   </div>
                 )
               })}

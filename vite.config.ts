@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['apple-touch-icon.png'],
+      includeAssets: ['apple-touch-icon-v2.png'],
       manifest: {
         name: '루티즈 (Routiz)',
         short_name: 'routiz',
@@ -19,10 +19,13 @@ export default defineConfig({
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#ffffff',
+        // 파일명에 -v2를 붙여 이전 아이콘 캐시(브라우저·OS가 파일명 기준으로 붙잡고 있던)와
+        // 겹치지 않는 새 URL을 쓴다 — PWA 아이콘은 한 번 설치되면 매니페스트를 다시 받아도
+        // 파일명이 같으면 아이콘이 안 바뀌는 경우가 흔하다.
         icons: [
-          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'pwa-192-v2.png', sizes: '192x192', type: 'image/png' },
+          { src: 'pwa-512-v2.png', sizes: '512x512', type: 'image/png' },
+          { src: 'pwa-maskable-512-v2.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       // 지도(네이버 지도 SDK)·Supabase 같은 외부 API 응답은 캐싱 대상에서 제외한다 —

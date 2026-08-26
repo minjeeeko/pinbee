@@ -31,7 +31,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
     <div className="screen">
       <AppBar title="순서 정하기" sub="변경한 동선은 자동 저장돼요" onBack={goBack} logo />
 
-      <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 20px', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas
           places={stats.places}
           showRoute

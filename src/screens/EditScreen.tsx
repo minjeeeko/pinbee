@@ -38,7 +38,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
         }
       />
 
-      <div style={{ position: 'relative', height: '38%', minHeight: 190, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
+      <div style={{ position: 'relative', height: '38%', minHeight: 190, margin: '0 20px', borderRadius: 0, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas places={stats.places} showRoute={false} showNumbers={false} showLabels seed={5} />
         <div style={{ position: 'absolute', left: 16, top: 16, zIndex: 3 }}>
           <span className="chip sm on">추가한 장소 {course.places.length}곳</span>
