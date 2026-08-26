@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
-import { PLACE_MAP, CATEGORY_COLOR } from '../data/places'
+import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { Empty } from '../components/ui'
 import { CategoryIcon } from '../components/CategoryIcon'
@@ -120,7 +120,6 @@ export default function HomeScreen() {
             >
               {course.places.map((cp) => {
                 const place = PLACE_MAP[cp.placeId]
-                const color = place ? CATEGORY_COLOR[place.category] : undefined
                 return (
                   <div
                     key={cp.uid}
@@ -128,16 +127,25 @@ export default function HomeScreen() {
                     style={{
                       flex: 'none',
                       width: 152,
+                      height: 64,
                       padding: 10,
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 4,
-                      borderColor: color ?? undefined,
+                      overflow: 'hidden',
                     }}
                     onClick={() => setEditing(cp.uid)}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
-                      <div className="name truncate" style={{ fontWeight: 700, fontSize: 14, lineHeight: '19px' }}>
+                      <div
+                        className="name truncate"
+                        style={{
+                          fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif",
+                          fontWeight: 700,
+                          fontSize: 14,
+                          lineHeight: '19px',
+                        }}
+                      >
                         {place?.name}
                       </div>
                       {place && <CategoryIcon category={place.category} size={17} />}

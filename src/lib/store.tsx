@@ -287,7 +287,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (isSavedCourseId(courseId)) {
         ensureGeocodedPlaces(nextPlaces.map((p) => p.placeId))
           .then(() => db.replaceCoursePlaces(courseId, nextPlaces))
-          .catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
+          .catch((e) => {
+            console.error('장소 반영 실패', e)
+            const detail = e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : ''
+            toast(detail ? `저장에 실패했어요: ${detail}` : '저장에 실패했어요. 다시 시도해주세요')
+          })
       }
     },
     [toast, ensureGeocodedPlaces],
@@ -350,8 +354,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             draftId: s.draftId === id ? inserted.id : s.draftId,
           }))
           return { ok: true, id: inserted.id }
-        } catch {
-          return { ok: false, error: '저장에 실패했어요. 다시 시도해주세요' }
+        } catch (e) {
+          // 저장 실패 원인(FK 위반·RLS 거부 등)을 콘솔과 배너에 그대로 남겨 원인을 바로 알 수 있게 한다
+          console.error('코스 저장 실패', e)
+          const detail = e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : ''
+          return { ok: false, error: detail ? `저장에 실패했어요: ${detail}` : '저장에 실패했어요. 다시 시도해주세요' }
         }
       },
       addPlaceToCourse: (courseId, placeId) =>

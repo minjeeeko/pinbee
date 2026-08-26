@@ -433,10 +433,14 @@ input, textarea { -webkit-appearance: none; }
 /* ── 순서 편집 */
 .drag-handle {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   font-size: 11px;
   font-weight: 500;
   color: var(--muted);
-  padding: var(--sp-sm);
   cursor: grab;
   touch-action: none;
   border-radius: var(--r-full);

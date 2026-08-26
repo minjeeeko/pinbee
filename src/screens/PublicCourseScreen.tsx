@@ -3,10 +3,10 @@ import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { TRANSPORT_LABEL } from '../lib/geo'
-import { PLACE_MAP } from '../data/places'
+import { PLACE_MAP, registerPlace } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
-import { fetchCourseById, fetchCourseByToken } from '../lib/db'
+import { fetchCourseById, fetchCourseByToken, fetchPlacesByIds } from '../lib/db'
 import { isSupabaseConfigured } from '../lib/supabase'
 import type { Course } from '../lib/types'
 
@@ -20,7 +20,8 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
   const [fetched, setFetched] = useState<Course | null>(null)
   const [checking, setChecking] = useState(!cached && isSupabaseConfigured)
   const course = cached ?? fetched ?? undefined
-  const stats = useMemo(() => (course ? courseStats(course) : null), [course])
+  const [placesTick, setPlacesTick] = useState(0)
+  const stats = useMemo(() => (course ? courseStats(course) : null), [course, placesTick])
 
   // 공유 링크로 바로 들어온 경우처럼 아직 목록 캐시에 없을 수 있어 직접 한 번 더 조회한다
   useEffect(() => {
@@ -36,6 +37,22 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
       .finally(() => setChecking(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cached, token, courseId])
+
+  // 다른 사람이 공유 링크로 처음 들어오면 그 코스가 참조하는 장소가 이 세션의
+  // PLACE_MAP에 없을 수 있다(주소 검색으로 등록된 장소 등) — 없으면 DB에서 채워 넣어야
+  // 지도가 실제 좌표로 표시된다. 비워두면 장소가 하나도 안 잡혀 지도가 기본 서울 중심(종로구)에 머문다.
+  useEffect(() => {
+    if (!course || !isSupabaseConfigured) return
+    const missing = course.places.map((p) => p.placeId).filter((id) => !PLACE_MAP[id])
+    if (missing.length === 0) return
+    fetchPlacesByIds(missing)
+      .then((places) => {
+        if (places.length === 0) return
+        places.forEach(registerPlace)
+        setPlacesTick((t) => t + 1)
+      })
+      .catch(() => {})
+  }, [course])
 
   if (checking) {
     return (
@@ -116,10 +133,6 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         <div className="bold" style={{ fontSize: 17, lineHeight: '27px' }}>
           {course.title}
         </div>
-        <div className="tiny muted" style={{ marginTop: 4 }}>
-          작성자 {course.authorName} · {stats.regions.join('·')} · {course.theme} ·{' '}
-          {stats.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'} · {course.places.length}곳
-        </div>
         {course.description && (
           <div className="small" style={{ marginTop: 10, color: 'var(--fg)' }}>
             {course.description}
@@ -130,28 +143,37 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
         {course.places.map((cp, i) => {
           const place = PLACE_MAP[cp.placeId]
           const leg = stats.legs[i]
+          const isLast = i === course.places.length - 1
           return (
-            <div key={cp.uid}>
-              <div className="card" style={{ padding: 12 }}>
-                <div className="list-item">
-                  <span className="num">{i + 1}</span>
-                  <div className="body">
-                    <div className="name truncate">{place?.name}</div>
-                    <div className="meta truncate">
-                      {place?.region} · {place?.category}
-                      {cp.memo ? ` · ${cp.memo}` : ''}
-                    </div>
-                  </div>
-                  <Thumb category={place?.category} />
-                </div>
+            <div key={cp.uid} style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flex: 'none' }}>
+                <span className="num">{i + 1}</span>
+                {!isLast && <div style={{ flex: 1, width: 1, minHeight: 20, background: 'var(--border)' }} />}
               </div>
-              {leg && (
-                <div className={`leg${leg.minutes === null ? ' error' : ''}`}>
-                  <span className="seg-btn">
-                    {TRANSPORT_LABEL[leg.transport]} · {leg.distanceKm.toFixed(1)}km
-                  </span>
+              <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 16 }}>
+                <div className="card" style={{ padding: 12, border: 'none' }}>
+                  <div className="list-item">
+                    <div className="body">
+                      <div className="name truncate">{place?.name}</div>
+                      <div className="meta truncate">
+                        {place?.category}
+                        {cp.memo ? ` · ${cp.memo}` : ''}
+                      </div>
+                    </div>
+                    <Thumb category={place?.category} border={false} />
+                  </div>
                 </div>
-              )}
+                {leg && (
+                  <div
+                    className={`leg${leg.minutes === null ? ' error' : ''}`}
+                    style={{ borderLeft: 'none', margin: '6px 0 0', paddingLeft: 0 }}
+                  >
+                    <span className="seg-btn">
+                      {TRANSPORT_LABEL[leg.transport]} · {leg.distanceKm.toFixed(1)}km
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
