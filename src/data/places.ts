@@ -65,7 +65,11 @@ export const PLACES: Place[] = [
 export const PLACE_MAP: Record<string, Place> = Object.fromEntries(PLACES.map((p) => [p.id, p]))
 
 export const CATEGORIES: Place['category'][] = ['카페', '식당', '전시', '쇼핑', '산책', '관광', '기타']
-export const REGIONS = Array.from(new Set(PLACES.map((p) => p.region)))
+
+/** 코스 저장 시 사용자가 고르는 대표 지역 (탐색 카드·필터에 쓴다). 장소 데이터의 region과는 별개다 */
+export const REGIONS = [
+  '홍대', '신촌', '성수', '서촌', '북촌', '종로', '동대문', '남대문', '강남', '사당', '김포', '천호', '잠실', '그외',
+]
 
 /** 카테고리별 색상 (dataviz 스킬의 검증된 카테고리컬 팔레트 1~7번 슬롯, 순서 고정). 지도 핀·카테고리 태그가 함께 쓴다 */
 export const CATEGORY_COLOR: Record<Place['category'], string> = {

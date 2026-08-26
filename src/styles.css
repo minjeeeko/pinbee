@@ -2,11 +2,12 @@
 @import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
 
 /* 제주돌담체 — 로고("routiz") 전용 글꼴.
-   깃허브 태그가 "v1.0"인데 URL엔 "v" 없이 "1.0"으로 돼 있어서 jsdelivr의 GitHub CDN이
-   그 버전을 못 찾아 404가 났었다(그래서 모바일에서 로고가 기본 폰트로 떴다) — "v1.0"으로 고침. */
+   jsdelivr(외부 CDN)의 GitHub 태그 버전(@1.0 → @v1.0)을 맞춰도 일부 환경(광고 차단·사내망·
+   특정 모바일 통신사 등)에서 여전히 jsdelivr 자체가 막혀 있으면 로고가 기본 폰트로 떴다.
+   외부 CDN 의존을 아예 없애기 위해 폰트 파일을 프로젝트에 직접 포함해 번들에서 서빙한다. */
 @font-face {
   font-family: 'JejuStoneWall';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@v1.0/EF_jejudoldam.woff2') format('woff2');
+  src: url('./assets/fonts/EF_jejudoldam.woff2') format('woff2');
   font-weight: normal;
   font-display: swap;
 }

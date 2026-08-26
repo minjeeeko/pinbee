@@ -29,7 +29,7 @@ export default defineConfig({
       // 이 앱은 항상 최신 코스·인증 상태로 동작해야 하는 서비스라, 오프라인 캐시는
       // 앱 셸(정적 파일)만 담당하고 실시간 데이터는 그대로 네트워크를 탄다.
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
       },
     }),
   ],

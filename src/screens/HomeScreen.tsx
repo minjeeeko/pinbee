@@ -88,7 +88,7 @@ export default function HomeScreen() {
           background: 'var(--canvas)',
         }}
       >
-        <div style={{ padding: '10px 20px 6px' }}>
+        <div style={{ padding: '16px 20px 8px' }}>
           {course.saved && course.title && (
             <div
               className="bold truncate"
@@ -116,7 +116,7 @@ export default function HomeScreen() {
               ref={rowRef}
               className="no-scrollbar"
               style={{
-                height: 66,
+                height: 84,
                 display: 'flex',
                 gap: 10,
                 overflowX: 'auto',
@@ -132,11 +132,11 @@ export default function HomeScreen() {
                     style={{
                       flex: 'none',
                       width: 152,
-                      height: 64,
-                      padding: 10,
+                      height: 80,
+                      padding: 12,
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 4,
+                      gap: 5,
                       overflow: 'hidden',
                     }}
                     onClick={() => setEditing(cp.uid)}

@@ -15,6 +15,7 @@ const REASONS = ['부적절한 내용', '개인정보 노출', '허위·과장 �
 export default function PublicCourseScreen({ courseId, token }: { courseId?: string; token?: string }) {
   const store = useStore()
   const [reportOpen, setReportOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [reason, setReason] = useState(REASONS[0])
   const cached = token ? store.getCourseByToken(token) : courseId ? store.getCourse(courseId) : undefined
   const [fetched, setFetched] = useState<Course | null>(null)
@@ -113,7 +114,11 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
             >
               공유
             </button>
-            {!isMine && (
+            {isMine ? (
+              <button className="btn xs" onClick={() => setDeleteOpen(true)}>
+                삭제
+              </button>
+            ) : (
               <button className="btn xs" onClick={() => setReportOpen(true)}>
                 신고
               </button>
@@ -206,6 +211,28 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
             }}
           >
             신고하기
+          </button>
+        </div>
+      </Modal>
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} center>
+        <div className="modal-title">이 코스를 삭제할까요?</div>
+        <div className="small muted" style={{ marginBottom: 14 }}>
+          삭제하면 되돌릴 수 없어요. 공유 링크로도 더 이상 볼 수 없게 돼요.
+        </div>
+        <div className="row">
+          <button className="btn" onClick={() => setDeleteOpen(false)}>
+            취소
+          </button>
+          <button
+            className="btn primary"
+            onClick={() => {
+              setDeleteOpen(false)
+              store.deleteCourse(course.id)
+              store.toast('코스를 삭제했어요')
+              navigate('/my-courses')
+            }}
+          >
+            삭제
           </button>
         </div>
       </Modal>
