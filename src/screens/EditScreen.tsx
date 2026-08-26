@@ -83,7 +83,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
                         <span className="pill">{cp.memo ? '메모 있음' : '메모 없음'}</span>
                       </div>
                     </div>
-                    <Thumb size="lg" />
+                    <Thumb size="lg" category={place?.category} />
                     <span {...handle}>순서</span>
                   </div>
                 </div>

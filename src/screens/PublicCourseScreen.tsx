@@ -142,7 +142,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
                       {cp.memo ? ` · ${cp.memo}` : ''}
                     </div>
                   </div>
-                  <Thumb />
+                  <Thumb category={place?.category} />
                 </div>
               </div>
               {leg && (

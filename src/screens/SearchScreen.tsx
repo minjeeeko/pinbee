@@ -96,6 +96,21 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     .filter((x): x is { candidate: ImportCandidate; place: Place } => !!x.place)
   const failedCandidates = candidates.filter((c) => !c.excluded && !c.placeId)
 
+  // 지도 미리보기: 이미 코스에 담은 장소는 계속 남아있고(누적), 지금 검색 중인 결과도 함께 보여줘서
+  // 검색해서 찾은 장소가 어디인지 바로 지도에서 확인하고(자동으로 그 위치로 이동) 담을 수 있게 한다.
+  const searchMapPlaces = useMemo(() => {
+    const addedPlaces = (course?.places ?? []).map((cp) => PLACE_MAP[cp.placeId]).filter((p): p is Place => !!p)
+    const seen = new Set(addedPlaces.map((p) => p.id))
+    const merged = [...addedPlaces]
+    for (const p of [...results.slice(0, 12), ...geoResults]) {
+      if (!seen.has(p.id)) {
+        merged.push(p)
+        seen.add(p.id)
+      }
+    }
+    return merged
+  }, [course?.places, results, geoResults])
+
   if (!course) {
     return (
       <div className="screen">
@@ -189,7 +204,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     return (
       <div className="card" key={place.id} style={{ padding: 12 }}>
         <div className="list-item">
-          <Thumb size="lg" />
+          <Thumb size="lg" category={place.category} />
           <div className="body">
             <div className="name truncate">{place.name}</div>
             <div className="meta truncate">{categoryLabel}</div>
@@ -255,10 +270,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
           </div>
 
           <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
-            <MapCanvas places={results.slice(0, 12)} showRoute={false} showNumbers={false} />
-            <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
-              <span className="chip sm outline">검색 결과 {results.length}곳</span>
-            </div>
+            <MapCanvas places={searchMapPlaces} showRoute={false} showNumbers={false} />
           </div>
 
           <div className="scroll pad" style={{ marginTop: 12 }}>
@@ -443,7 +455,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
               }}
             >
               <div className="list-item">
-                <Thumb />
+                <Thumb category={place.category} />
                 <div className="body">
                   <div className="name truncate">{place.name}</div>
                   <div className="meta truncate">

@@ -110,7 +110,7 @@ export default function HomeScreen() {
               ref={rowRef}
               className="no-scrollbar"
               style={{
-                height: 140,
+                height: 110,
                 display: 'flex',
                 gap: 10,
                 overflowX: 'auto',
@@ -126,8 +126,8 @@ export default function HomeScreen() {
                     style={{ flex: 'none', width: 152, padding: 10, display: 'flex', flexDirection: 'column' }}
                     onClick={() => setEditing(cp.uid)}
                   >
-                    <Thumb />
-                    <div className="name truncate" style={{ marginTop: 8 }}>
+                    <Thumb category={place?.category} />
+                    <div className="name truncate" style={{ marginTop: 6 }}>
                       {place?.name}
                     </div>
                     <div className="meta truncate">{place?.category}</div>

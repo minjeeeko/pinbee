@@ -75,9 +75,6 @@ export default function SavedPlacesScreen() {
         }}
       >
         <MapCanvas places={places} showRoute={false} showNumbers={false} />
-        <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
-          <span className="chip sm outline">{places.length}곳 표시 중</span>
-        </div>
       </div>
 
       <div className="chips" style={{ padding: '14px 20px 8px' }}>
@@ -116,7 +113,7 @@ export default function SavedPlacesScreen() {
           rows.map(({ place: p, memo }) => (
             <div className="card" key={p.id} style={{ padding: 12 }}>
               <div className="list-item">
-                <Thumb size="lg" />
+                <Thumb size="lg" category={p.category} />
                 <div className="body">
                   <div className="name truncate">{p.name}</div>
                   <div className="meta truncate">{p.category}</div>

@@ -1,5 +1,8 @@
 import React from 'react'
 import { useStore } from '../lib/store'
+import { CATEGORY_COLOR } from '../data/places'
+import { CategoryIcon } from './CategoryIcon'
+import type { Category } from '../lib/types'
 
 export function Modal({
   open,
@@ -113,7 +116,13 @@ export function Empty({ title, desc, action }: { title: string; desc?: string; a
   )
 }
 
-/** 장소 대표 이미지 자리 (프로토타입에서는 회색 플레이스홀더) */
-export function Thumb({ size = '' }: { size?: string }) {
-  return <span className={`thumb ${size}`} />
+/** 장소 대표 이미지 자리. 이미지가 없으니 카테고리에 맞는 아이콘을 그 카테고리 색으로 보여준다 */
+export function Thumb({ size = '', category }: { size?: string; category?: Category }) {
+  if (!category) return <span className={`thumb ${size}`} />
+  const color = CATEGORY_COLOR[category]
+  return (
+    <span className={`thumb ${size}`} style={{ background: `${color}1a`, borderColor: `${color}40`, color }}>
+      <CategoryIcon category={category} size={size === 'lg' ? 26 : 20} />
+    </span>
+  )
 }

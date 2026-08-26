@@ -135,7 +135,7 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
                     flex: 'none',
                   }}
                 >
-                  <Thumb size="lg" />
+                  <Thumb size="lg" category={p?.category} />
                   <div className="tiny truncate" style={{ width: 60, marginTop: 4 }}>
                     {p?.name}
                   </div>

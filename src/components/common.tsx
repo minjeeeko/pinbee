@@ -28,7 +28,7 @@ export function PlaceRow({
           {sub ?? `${place.address.replace('서울 ', '')} · ${place.category}`}
         </div>
       </div>
-      <Thumb />
+      <Thumb category={place.category} />
       {right}
     </div>
   )
@@ -128,7 +128,7 @@ export function PlaceEditorModal({
             {place?.address.replace('서울 ', '')} · {place?.category}
           </div>
         </div>
-        <Thumb size="lg" />
+        <Thumb size="lg" category={place?.category} />
       </div>
 
       <label className="field">

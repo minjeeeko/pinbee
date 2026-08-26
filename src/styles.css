@@ -323,7 +323,9 @@ input, textarea { -webkit-appearance: none; }
 .card.flat { border-color: transparent; background: var(--map-base); }
 
 .thumb {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 44px;
   height: 44px;
   border-radius: var(--r-btn);
@@ -372,7 +374,8 @@ input, textarea { -webkit-appearance: none; }
 .modal-backdrop {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  /* 네이버 지도 SDK가 지도 안에 직접 그려 넣는 저작권 표시·축척 컨트롤보다 항상 위에 오도록 충분히 높게 잡는다 */
+  z-index: 1000;
   background: rgba(17, 17, 17, .45);
   display: flex;
   align-items: flex-end;
