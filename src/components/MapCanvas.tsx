@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Category, Leg, Place } from '../lib/types'
+import type { Leg, Place } from '../lib/types'
 import { loadNaverMaps, onNaverMapAuthFail } from '../lib/naverMaps'
+import { CATEGORY_COLOR } from '../data/places'
 
 interface Props {
   places: Place[]
@@ -23,17 +24,6 @@ const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
 const KEY = '#111111'
 const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
-
-/** 카테고리별 핀 색상 (dataviz 스킬의 검증된 카테고리컬 팔레트 1~7번 슬롯, 순서 고정) */
-const CATEGORY_COLOR: Record<Category, string> = {
-  카페: '#2a78d6',
-  식당: '#eb6834',
-  전시: '#1baf7a',
-  쇼핑: '#eda100',
-  산책: '#e87ba4',
-  관광: '#008300',
-  기타: '#4a3aa7',
-}
 
 function pinIcon(index: number, showNumbers: boolean, active: boolean, color: string) {
   const size = showNumbers ? (active ? 26 : 22) : active ? 16 : 12

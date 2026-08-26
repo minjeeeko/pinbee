@@ -130,9 +130,7 @@ export default function HomeScreen() {
                     <div className="name truncate" style={{ marginTop: 8 }}>
                       {place?.name}
                     </div>
-                    <div className="meta truncate">
-                      {place?.category} · 좋아요 {place?.likeCount ?? 0}
-                    </div>
+                    <div className="meta truncate">{place?.category}</div>
                   </div>
                 )
               })}

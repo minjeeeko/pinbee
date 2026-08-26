@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
-import { PLACE_MAP, CATEGORIES } from '../data/places'
+import { PLACE_MAP, CATEGORIES, CATEGORY_COLOR } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
 import { Empty, Modal, Thumb } from '../components/ui'
 import { josa } from '../lib/text'
@@ -83,6 +83,19 @@ export default function SavedPlacesScreen() {
       <div className="chips" style={{ padding: '14px 20px 8px' }}>
         {(['전체', ...CATEGORIES] as const).map((c) => (
           <button key={c} className={`chip sm${cat === c ? ' on' : ''}`} onClick={() => setCat(c)}>
+            {c !== '전체' && (
+              <span
+                aria-hidden
+                style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: CATEGORY_COLOR[c],
+                  marginRight: 5,
+                }}
+              />
+            )}
             {c}
           </button>
         ))}
@@ -106,9 +119,7 @@ export default function SavedPlacesScreen() {
                 <Thumb size="lg" />
                 <div className="body">
                   <div className="name truncate">{p.name}</div>
-                  <div className="meta truncate">
-                    {p.category} · 좋아요 {p.likeCount}
-                  </div>
+                  <div className="meta truncate">{p.category}</div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                   <button className="btn xs primary" onClick={() => add(p.id)}>

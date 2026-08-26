@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
-import { PLACES, CATEGORIES, PLACE_MAP, registerPlace } from '../data/places'
+import { PLACES, CATEGORIES, PLACE_MAP, CATEGORY_COLOR, registerPlace } from '../data/places'
 import { extractFromImage, matchPlaces, parseText, similarity } from '../lib/importParse'
 import { geocodeAddress, geocodeResultToPlace } from '../lib/geocode'
 import { searchLocalPlaces } from '../lib/localSearch'
@@ -21,6 +21,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
 
   const [geoResults, setGeoResults] = useState<Place[]>([])
   const [geoLoading, setGeoLoading] = useState(false)
+  const [categoryPickFor, setCategoryPickFor] = useState<Place | null>(null)
 
   const [candidates, setCandidates] = useState<ImportCandidate[]>([])
   const [pasteText, setPasteText] = useState('')
@@ -149,37 +150,57 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     }
   }
 
+  const saveOrPick = (place: Place) => {
+    const already = store.savedPlaces.some((sp) => sp.placeId === place.id)
+    if (already) {
+      store.toggleSavedPlace(place.id)
+      store.toast('저장 장소에서 제외했어요')
+      return
+    }
+    // 상호명 검색·지오코딩으로 찾은 장소는 카테고리가 추정값이거나 정보가 없어서, 저장하는
+    // 순간 사용자가 직접 7개 카테고리 중 하나로 확정 짓게 한다. 내장 40곳은 이미 정확해서 바로 저장한다.
+    if (place.id.startsWith('p-geo-')) {
+      setCategoryPickFor(place)
+      return
+    }
+    store.toggleSavedPlace(place.id)
+    store.toast('저장 장소에 담았어요')
+  }
+
+  const confirmSaveWithCategory = (category: Category) => {
+    if (!categoryPickFor) return
+    const updated = { ...categoryPickFor, category }
+    registerPlace(updated)
+    store.toggleSavedPlace(updated.id)
+    store.toast('저장 장소에 담았어요')
+    setCategoryPickFor(null)
+  }
+
   const resultCard = (place: Place, extra?: React.ReactNode) => {
     // 주소 검색(geocoding) 결과는 내장 40곳과 달리 PLACE_MAP에 없을 수 있어, 카드에 보이는 순간
     // 등록해둔다 — 코스 추가·저장 액션이 항상 PLACE_MAP[placeId]로 장소를 찾기 때문
     if (!PLACE_MAP[place.id]) registerPlace(place)
     const added = courseHasPlace(course, place.id)
     const isGeocoded = place.id.startsWith('p-geo-')
+    const saved = store.savedPlaces.some((sp) => sp.placeId === place.id)
+    // 아직 저장 안 한 상태에서는(저장 전엔 우리 7개 카테고리로 확정되지 않았으니) 네이버가 준
+    // 원본 업종 문자열을 그대로 보여준다. 저장된 뒤에는 사용자가 고른(또는 내장) 카테고리를 보여준다.
+    const categoryLabel = !saved && place.sourceCategory ? place.sourceCategory : place.category
     return (
       <div className="card" key={place.id} style={{ padding: 12 }}>
         <div className="list-item">
           <Thumb size="lg" />
           <div className="body">
             <div className="name truncate">{place.name}</div>
-            <div className="meta truncate">
-              {place.category} · 좋아요 {place.likeCount}
-            </div>
+            <div className="meta truncate">{categoryLabel}</div>
             {isGeocoded && <div className="tiny muted truncate">{place.address}</div>}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
             <button className={`btn xs${added ? '' : ' primary'}`} onClick={() => add(place)}>
               {added ? '추가됨' : '추가'}
             </button>
-            <button
-              className="btn xs"
-              onClick={() => {
-                store.toggleSavedPlace(place.id)
-                store.toast(
-                  store.savedPlaces.some((sp) => sp.placeId === place.id) ? '저장 장소에서 제외했어요' : '저장 장소에 담았어요',
-                )
-              }}
-            >
-              {store.savedPlaces.some((sp) => sp.placeId === place.id) ? '저장됨' : '저장'}
+            <button className="btn xs" onClick={() => saveOrPick(place)}>
+              {saved ? '저장됨' : '저장'}
             </button>
           </div>
         </div>
@@ -436,6 +457,32 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
           {matchPlaces(relinkQuery, 6).length === 0 && (
             <div className="tiny muted">일치하는 장소가 없어요. 다른 검색어를 입력해보세요.</div>
           )}
+        </div>
+      </Modal>
+
+      <Modal open={!!categoryPickFor} onClose={() => setCategoryPickFor(null)} center>
+        <div className="modal-title">어떤 카테고리인가요?</div>
+        <div className="small muted" style={{ marginBottom: 16 }}>
+          {categoryPickFor?.name}
+          {categoryPickFor ? josa(categoryPickFor.name, '을', '를') : ''} 저장 장소에 담으려면 카테고리를 골라주세요.
+        </div>
+        <div className="chips">
+          {CATEGORIES.map((c) => (
+            <button key={c} className="chip sm" onClick={() => confirmSaveWithCategory(c)}>
+              <span
+                aria-hidden
+                style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: CATEGORY_COLOR[c],
+                  marginRight: 5,
+                }}
+              />
+              {c}
+            </button>
+          ))}
         </div>
       </Modal>
 

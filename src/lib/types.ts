@@ -20,6 +20,8 @@ export interface Place {
   desc?: string
   /** 저장한 사용자 수 (프로토타입 목데이터) */
   likeCount: number
+  /** 상호명 검색(네이버 지역 검색) 결과의 원본 업종 문자열. 저장 전(아직 카테고리를 고르지 않은) 카드 표시용 */
+  sourceCategory?: string
 }
 
 export interface CoursePlace {

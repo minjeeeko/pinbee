@@ -67,6 +67,17 @@ export const PLACE_MAP: Record<string, Place> = Object.fromEntries(PLACES.map((p
 export const CATEGORIES: Place['category'][] = ['카페', '식당', '전시', '쇼핑', '산책', '관광', '기타']
 export const REGIONS = Array.from(new Set(PLACES.map((p) => p.region)))
 
+/** 카테고리별 색상 (dataviz 스킬의 검증된 카테고리컬 팔레트 1~7번 슬롯, 순서 고정). 지도 핀·카테고리 태그가 함께 쓴다 */
+export const CATEGORY_COLOR: Record<Place['category'], string> = {
+  카페: '#2a78d6',
+  식당: '#eb6834',
+  전시: '#1baf7a',
+  쇼핑: '#eda100',
+  산책: '#e87ba4',
+  관광: '#008300',
+  기타: '#4a3aa7',
+}
+
 /**
  * 주소 검색(Geocoding)으로 새로 찾은 장소를 실행 중에 PLACE_MAP에 등록한다.
  * PLACE_MAP은 내장 40곳 조회에도 쓰이는 단일 참조 테이블이라, 여기에 더해두면

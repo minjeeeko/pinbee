@@ -37,6 +37,7 @@ export async function searchLocalPlaces(query: string): Promise<Place[]> {
         address,
         region: extractRegion(address),
         category: guessCategory(item.category),
+        sourceCategory: item.category || undefined,
         lat: item.lat,
         lng: item.lng,
         likeCount: 0,
