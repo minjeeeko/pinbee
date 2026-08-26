@@ -2,6 +2,9 @@ import { useRef, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { AGE_GROUPS, REFERRAL_SOURCES, EXPECTED_FEATURES } from '../data/seed'
+import { CATEGORIES } from '../data/places'
+import { TRANSPORT_LABEL } from '../lib/geo'
+import type { Category, Transport } from '../lib/types'
 import { Empty } from '../components/ui'
 
 export default function MeScreen() {
@@ -15,6 +18,25 @@ export default function MeScreen() {
   const [referralSource, setReferralSource] = useState(user?.referralSource ?? null)
   const [expectedFeatures, setExpectedFeatures] = useState<string[]>(user?.expectedFeatures ?? [])
   const [saving, setSaving] = useState(false)
+
+  const [editingPrefs, setEditingPrefs] = useState(false)
+  const [transport, setTransport] = useState<Transport | 'mixed'>(store.prefs.transport)
+  const [categories, setCategories] = useState<Category[]>(store.prefs.categories)
+
+  const openPrefsEditor = () => {
+    setTransport(store.prefs.transport)
+    setCategories(store.prefs.categories)
+    setEditingPrefs(true)
+  }
+
+  const toggleCategory = (c: Category) =>
+    setCategories((cs) => (cs.includes(c) ? cs.filter((x) => x !== c) : [...cs, c]))
+
+  const savePrefs = () => {
+    store.setPrefs({ ...store.prefs, transport, categories })
+    store.toast('내 정보를 저장했어요')
+    setEditingPrefs(false)
+  }
 
   const dirty =
     !!user &&
@@ -54,7 +76,7 @@ export default function MeScreen() {
     return (
       <div className="screen">
         <div className="appbar">
-          <h1 className="hero">내 정보</h1>
+          <h1 className="hero logo">내 정보</h1>
         </div>
         <div className="scroll pad">
           <Empty
@@ -74,7 +96,7 @@ export default function MeScreen() {
   return (
     <div className="screen">
       <div className="appbar">
-        <h1 className="hero">내 정보</h1>
+        <h1 className="hero logo">내 정보</h1>
       </div>
 
       <div className="scroll pad">
@@ -161,6 +183,51 @@ export default function MeScreen() {
         <button className="btn primary block" disabled={!dirty || saving} onClick={save} style={{ marginTop: 8 }}>
           {saving ? '저장 중…' : '프로필 저장'}
         </button>
+
+        {editingPrefs ? (
+          <div className="card" style={{ padding: 14, marginTop: 24 }}>
+            <div className="field">
+              <span className="label">주로 어떻게 이동하세요?</span>
+              <div className="chips">
+                {(['mixed', 'walk', 'transit', 'car'] as const).map((t) => (
+                  <button
+                    key={t}
+                    className={`chip sm${transport === t ? ' on' : ''}`}
+                    onClick={() => setTransport(t)}
+                  >
+                    {t === 'mixed' ? '혼합' : TRANSPORT_LABEL[t as Transport]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="field">
+              <span className="label">좋아하는 장소 유형</span>
+              <div className="chips">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    className={`chip sm${categories.includes(c) ? ' on' : ''}`}
+                    onClick={() => toggleCategory(c)}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="row" style={{ marginTop: 4 }}>
+              <button className="btn" onClick={() => setEditingPrefs(false)}>
+                취소
+              </button>
+              <button className="btn primary" onClick={savePrefs}>
+                저장
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button className="btn outline block" style={{ marginTop: 24 }} onClick={openPrefsEditor}>
+            내 정보 수정하기
+          </button>
+        )}
 
         <button className="btn block" style={{ marginTop: 10 }} onClick={() => store.logout()}>
           로그아웃

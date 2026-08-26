@@ -38,7 +38,7 @@ export default function ExploreScreen() {
   return (
     <div className="screen">
       <div className="appbar" style={{ paddingBottom: 0 }}>
-        <h1 className="hero">탐색</h1>
+        <h1 className="hero logo">탐색</h1>
         <div className="spacer" />
         {store.user && (
           <button className="btn xs" onClick={() => navigate('/my-courses')}>

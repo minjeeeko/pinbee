@@ -53,7 +53,7 @@ export default function SavedPlacesScreen() {
     <div className="screen">
       <div className="appbar">
         <div>
-          <h1 className="hero">저장 장소</h1>
+          <h1 className="hero logo">저장 장소</h1>
           <div className="sub">{store.savedPlaces.length}곳 저장됨</div>
         </div>
         <div className="spacer" />

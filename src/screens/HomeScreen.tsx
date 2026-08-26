@@ -149,15 +149,17 @@ export default function HomeScreen() {
           </>
         )}
 
-        <div style={{ padding: '10px 20px calc(14px + var(--safe-b))' }}>
-          <button
-            className="btn primary block"
-            disabled={course.places.length < 2}
-            onClick={() => navigate('/order/' + course.id)}
-          >
-            코스 만들기
-          </button>
-        </div>
+        {course.places.length > 0 && (
+          <div style={{ padding: '10px 20px calc(14px + var(--safe-b))' }}>
+            <button
+              className="btn primary block"
+              disabled={course.places.length < 2}
+              onClick={() => navigate('/order/' + course.id)}
+            >
+              코스 만들기
+            </button>
+          </div>
+        )}
       </div>
 
       <PlaceEditorModal

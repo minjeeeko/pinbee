@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Leg, Place } from '../lib/types'
+import type { Category, Leg, Place } from '../lib/types'
 import { loadNaverMaps, onNaverMapAuthFail } from '../lib/naverMaps'
 
 interface Props {
@@ -19,18 +19,29 @@ interface Props {
 }
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
-/** 키컬러 — 지도 핀·동선 */
+/** 동선선은 계속 무채색 키컬러를 쓴다 (핀만 카테고리별 색상) */
 const KEY = '#111111'
 const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
 
-function pinIcon(index: number, showNumbers: boolean, active: boolean) {
-  const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
-  const ring = active ? `box-shadow:0 1px 4px rgba(17,17,17,.4),0 0 0 6px rgba(17,17,17,.22);` : `box-shadow:0 1px 4px rgba(17,17,17,.4);`
+/** 카테고리별 핀 색상 (dataviz 스킬의 검증된 카테고리컬 팔레트 1~7번 슬롯, 순서 고정) */
+const CATEGORY_COLOR: Record<Category, string> = {
+  카페: '#2a78d6',
+  식당: '#eb6834',
+  전시: '#1baf7a',
+  쇼핑: '#eda100',
+  산책: '#e87ba4',
+  관광: '#008300',
+  기타: '#4a3aa7',
+}
+
+function pinIcon(index: number, showNumbers: boolean, active: boolean, color: string) {
+  const size = showNumbers ? (active ? 26 : 22) : active ? 16 : 12
+  const ring = active ? `box-shadow:0 1px 4px rgba(17,17,17,.4),0 0 0 3px rgba(17,17,17,.22);` : `box-shadow:0 1px 4px rgba(17,17,17,.4);`
   const label = showNumbers
-    ? `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 13 : 12}px;font-family:'Wanted Sans Variable',sans-serif;`
+    ? `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 12 : 11}px;font-family:'Wanted Sans Variable',sans-serif;`
     : ''
-  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${KEY};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
+  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
 }
 
 export default function MapCanvas({
@@ -126,8 +137,9 @@ export default function MapCanvas({
 
     places.forEach((place, i) => {
       const active = activeIndex === i
-      const dot = pinIcon(i, showNumbers, active)
-      const size = showNumbers ? (active ? 34 : 28) : active ? 22 : 18
+      const color = CATEGORY_COLOR[place.category] ?? CATEGORY_COLOR.기타
+      const dot = pinIcon(i, showNumbers, active, color)
+      const size = showNumbers ? (active ? 26 : 22) : active ? 16 : 12
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
              <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Wanted Sans Variable',sans-serif;">${

@@ -211,7 +211,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           return { ...s, courses: [...localOnly, ...fetched] }
         })
       })
-      .catch(() => toast('코스를 불러오지 못했어요'))
+      .catch(() => {
+        /* 접속하자마자 배경에서 조용히 재시도되는 조회라 실패했다고 매번 토스트를 띄우지 않는다 */
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.user?.id])
 
