@@ -4,10 +4,8 @@ import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { PLACE_MAP } from '../data/places'
 import MapCanvas from '../components/MapCanvas'
-import SortableList from '../components/SortableList'
 import { AppBar, Empty, Thumb } from '../components/ui'
 import { PlaceEditorModal } from '../components/common'
-import type { CoursePlace } from '../lib/types'
 
 export default function EditScreen({ courseId }: { courseId?: string }) {
   const store = useStore()
@@ -32,6 +30,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
       <AppBar
         title="코스 편집"
         onBack={goBack}
+        logo
         right={
           <button className="textbtn strong" onClick={() => navigate('/save/' + course.id)}>
             저장
@@ -43,9 +42,6 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
         <MapCanvas places={stats.places} showRoute={false} showNumbers={false} showLabels seed={5} />
         <div style={{ position: 'absolute', left: 16, top: 16, zIndex: 3 }}>
           <span className="chip sm on">추가한 장소 {course.places.length}곳</span>
-        </div>
-        <div style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 3 }}>
-          <span className="chip sm outline">지도에 분포만 표시 · 순서 없음</span>
         </div>
       </div>
 
@@ -64,32 +60,38 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
             }
           />
         ) : (
-          <SortableList
-            items={course.places}
-            keyOf={(p: CoursePlace) => p.uid}
-            onReorder={(next) => store.reorderCourse(course.id, next)}
-            renderItem={(cp, i, handle) => {
+          <div>
+            {course.places.map((cp, i) => {
               const place = PLACE_MAP[cp.placeId]
+              const isLast = i === course.places.length - 1
               return (
-                <div className="card" style={{ padding: 12 }}>
-                  <div className="list-item">
+                <div key={cp.uid} style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 24, flex: 'none' }}>
                     <span className="num">{i + 1}</span>
-                    <div className="body" onClick={() => setEditing(cp.uid)}>
-                      <div className="name truncate">{place?.name}</div>
-                      <div className="meta truncate">
-                        {place?.address.replace('서울 ', '')} · {place?.category}
-                      </div>
-                      <div className="flexrow" style={{ marginTop: 6, gap: 6 }}>
-                        <span className="pill">{cp.memo ? '메모 있음' : '메모 없음'}</span>
+                    {!isLast && <div style={{ flex: 1, width: 1, minHeight: 20, background: 'var(--border)' }} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, paddingBottom: isLast ? 0 : 16 }}>
+                    <div className="card tap" style={{ padding: 12, border: 'none' }} onClick={() => setEditing(cp.uid)}>
+                      <div className="list-item">
+                        <div className="body">
+                          <div className="name truncate">{place?.name}</div>
+                          <div className="meta truncate">
+                            {place?.address.replace('서울 ', '')} · {place?.category}
+                          </div>
+                          {cp.memo && (
+                            <div className="tiny muted truncate" style={{ marginTop: 6 }}>
+                              {cp.memo}
+                            </div>
+                          )}
+                        </div>
+                        <Thumb size="lg" category={place?.category} border={false} />
                       </div>
                     </div>
-                    <Thumb size="lg" category={place?.category} />
-                    <span {...handle}>순서</span>
                   </div>
                 </div>
               )
-            }}
-          />
+            })}
+          </div>
         )}
 
         <button className="btn ghost block" style={{ marginTop: 12 }} onClick={() => navigate('/search/' + course.id)}>

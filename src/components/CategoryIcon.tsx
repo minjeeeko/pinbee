@@ -1,6 +1,6 @@
 import type { Category } from '../lib/types'
 
-const CATEGORY_EMOJI: Record<Category, string> = {
+export const CATEGORY_EMOJI: Record<Category, string> = {
   식당: '🍚',
   카페: '☕',
   전시: '🖼️',

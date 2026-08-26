@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Leg, Place } from '../lib/types'
 import { loadNaverMaps, onNaverMapAuthFail } from '../lib/naverMaps'
 import { CATEGORY_COLOR } from '../data/places'
+import { CATEGORY_EMOJI } from './CategoryIcon'
 
 interface Props {
   places: Place[]
@@ -25,13 +26,20 @@ const KEY = '#111111'
 const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
 
-function pinIcon(index: number, showNumbers: boolean, active: boolean, color: string) {
-  const size = showNumbers ? (active ? 26 : 22) : active ? 16 : 12
+function pinSize(showNumbers: boolean, active: boolean) {
+  return showNumbers ? (active ? 26 : 22) : active ? 24 : 20
+}
+
+/** showNumbers면 순서 번호를, 아니면 카테고리 이모지를 동그란 핀 안에 작게 넣는다 */
+function pinIcon(index: number, showNumbers: boolean, active: boolean, color: string, category: Place['category']) {
+  const size = pinSize(showNumbers, active)
   const ring = active ? `box-shadow:0 1px 4px rgba(17,17,17,.4),0 0 0 3px rgba(17,17,17,.22);` : `box-shadow:0 1px 4px rgba(17,17,17,.4);`
-  const label = showNumbers
-    ? `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 12 : 11}px;font-family:'Wanted Sans Variable',sans-serif;`
-    : ''
-  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${showNumbers ? index + 1 : ''}</div>`
+  if (showNumbers) {
+    const label = `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 12 : 11}px;font-family:'Wanted Sans Variable',sans-serif;`
+    return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${index + 1}</div>`
+  }
+  const fontSize = Math.round(size * 0.58)
+  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:#fff;border:2px solid ${color};${ring}display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;">${CATEGORY_EMOJI[category]}</div>`
 }
 
 export default function MapCanvas({
@@ -128,8 +136,8 @@ export default function MapCanvas({
     places.forEach((place, i) => {
       const active = activeIndex === i
       const color = CATEGORY_COLOR[place.category] ?? CATEGORY_COLOR.기타
-      const dot = pinIcon(i, showNumbers, active, color)
-      const size = showNumbers ? (active ? 26 : 22) : active ? 16 : 12
+      const dot = pinIcon(i, showNumbers, active, color, place.category)
+      const size = pinSize(showNumbers, active)
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
              <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Wanted Sans Variable',sans-serif;">${

@@ -88,7 +88,10 @@ export default function HomeScreen() {
       >
         <div style={{ padding: '10px 20px 6px' }}>
           {course.saved && course.title && (
-            <div className="bold truncate" style={{ fontSize: 17, lineHeight: '27px' }}>
+            <div
+              className="bold truncate"
+              style={{ fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif", fontSize: 17, lineHeight: '27px' }}
+            >
               {course.title}
             </div>
           )}
@@ -139,12 +142,7 @@ export default function HomeScreen() {
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
                       <div
                         className="name truncate"
-                        style={{
-                          fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif",
-                          fontWeight: 700,
-                          fontSize: 14,
-                          lineHeight: '19px',
-                        }}
+                        style={{ fontWeight: 700, fontSize: 14, lineHeight: '19px' }}
                       >
                         {place?.name}
                       </div>

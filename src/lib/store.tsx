@@ -141,9 +141,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const toast = useCallback((text: string) => {
+    // 알림이 여러 개 겹쳐 쌓이지 않게, 항상 최신 알림 하나만 보여준다
     const id = Date.now() + Math.random()
-    setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2400)
+    setToasts([{ id, text }])
+    setTimeout(() => setToasts((t) => (t[0]?.id === id ? [] : t)), 2400)
   }, [])
 
   // 인증 상태 구독: 로그인/로그아웃/토큰 갱신마다 프로필을 다시 읽는다
