@@ -20,8 +20,8 @@ export default function ExploreScreen() {
     const query = q.trim()
     return store.publicCourses.filter((c) => {
       const s = courseStats(c)
-      if (query && !`${c.title} ${c.description} ${c.theme} ${s.regions.join(' ')}`.includes(query)) return false
-      if (region && !s.regions.includes(region)) return false
+      if (query && !`${c.title} ${c.description} ${c.theme} ${c.region ?? ''}`.includes(query)) return false
+      if (region && c.region !== region) return false
       if (theme && c.theme !== theme) return false
       if (transport && !s.transports.includes(transport)) return false
       return true

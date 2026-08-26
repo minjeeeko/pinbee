@@ -3,6 +3,7 @@ import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
 import { THEMES } from '../data/seed'
+import { REGIONS } from '../data/places'
 import { AppBar, Empty, Modal, Switch } from '../components/ui'
 
 function shareUrl(token: string) {
@@ -57,6 +58,10 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       setSaveError('코스 이름을 입력해주세요. 입력한 내용은 그대로 유지돼요.')
       return
     }
+    if (!course.region) {
+      setSaveError('지역을 선택해주세요. 탐색 카드에 표시돼요.')
+      return
+    }
     setSaveError('')
     setSaving(true)
     const result = await store.saveCourse(course.id)
@@ -98,6 +103,21 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
             onChange={(e) => store.updateCourse(course.id, { description: e.target.value })}
           />
         </label>
+
+        <div className="field">
+          <span className="label">지역</span>
+          <div className="chips">
+            {REGIONS.map((r) => (
+              <button
+                key={r}
+                className={`chip sm${course.region === r ? ' on' : ''}`}
+                onClick={() => store.updateCourse(course.id, { region: r })}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="field">
           <span className="label">테마</span>

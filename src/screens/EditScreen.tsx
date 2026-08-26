@@ -84,7 +84,7 @@ export default function EditScreen({ courseId }: { courseId?: string }) {
                             </div>
                           )}
                         </div>
-                        <Thumb size="lg" category={place?.category} border={false} />
+                        <Thumb size="lg" category={place?.category} />
                       </div>
                     </div>
                   </div>

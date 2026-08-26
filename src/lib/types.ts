@@ -60,6 +60,8 @@ export interface Course {
   createdAt: number
   updatedAt: number
   theme: string
+  /** 코스 저장 시 사용자가 직접 고르는 대표 지역 (탐색 카드에 표시). 아직 안 골랐으면 null */
+  region: string | null
   /** 저장(코스 저장) 완료 여부. 편집 중인 초안은 false */
   saved: boolean
 }

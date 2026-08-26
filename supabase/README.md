@@ -48,6 +48,13 @@ supabase functions deploy directions
 PostgREST가 코스를 조회·저장할 때마다 작성자 이름(`profiles.name`)을 함께 가져오지 못해 나는 에러입니다.
 처음 설치하는 경우 `schema.sql`에 이미 반영돼 있어 따로 실행할 필요가 없습니다.
 
+## 코스 저장 시 지역을 직접 고르는 기능을 새로 받았다면
+
+`schema.sql`을 이미 실행한 적이 있는 DB라면 **`migrations/0005_courses_region.sql`을 SQL Editor에서
+한 번 실행**하세요. `courses` 테이블에 `region` 컬럼을 추가합니다(코스에 담긴 장소들에서 자동으로
+뽑는 대신, 저장할 때 사용자가 직접 고른 지역을 탐색 카드에 보여주기 위함). 처음 설치하는 경우
+`schema.sql`에 이미 반영돼 있어 따로 실행할 필요가 없습니다.
+
 ## 상호명 검색(지역 검색) 기능을 새로 받았다면
 
 DB 변경은 없습니다(상호명 검색 결과도 좌표 기반 `p-geo-` id를 그대로 써서, 위 지오코딩 마이그레이션이

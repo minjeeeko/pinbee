@@ -1,8 +1,6 @@
 import React, { useState } from 'react'
 import type { Course, CoursePlace, Leg, Place, Transport } from '../lib/types'
 import { TRANSPORT_LABEL } from '../lib/geo'
-
-import { courseStats } from '../lib/course'
 import { PLACE_MAP } from '../data/places'
 import { Modal, Thumb } from './ui'
 
@@ -154,25 +152,14 @@ export function PlaceEditorModal({
 }
 
 export function CourseCard({ course, onClick }: { course: Course; onClick: () => void }) {
-  const s = courseStats(course)
   return (
     <div className="card tap" onClick={onClick} style={{ cursor: 'pointer' }}>
-      <div className="flexrow" style={{ alignItems: 'flex-start', gap: 12 }}>
-        <Thumb size="lg" />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="between">
-            <div className="bold truncate">{course.title || '이름 없는 코스'}</div>
-            <span className={`pill${course.hidden ? ' dark' : ''}`}>
-              {course.hidden ? '숨김' : course.visibility === 'public' ? '공개' : '비공개'}
-            </span>
-          </div>
-          <div className="tiny muted" style={{ marginTop: 3 }}>
-            {course.authorName} · {s.regions.slice(0, 2).join('·') || '장소 없음'} · {course.theme}
-          </div>
-          <div className="tiny muted" style={{ marginTop: 4 }}>
-            {course.places.length}곳 · {s.transports.map((t) => TRANSPORT_LABEL[t]).join('+') || '이동수단 없음'}
-          </div>
-        </div>
+      <div className="bold truncate">{course.title || '이름 없는 코스'}</div>
+      <div className="tiny muted" style={{ marginTop: 3 }}>
+        {course.authorName} · {course.region ?? '지역 미지정'} · {course.theme}
+      </div>
+      <div className="tiny muted" style={{ marginTop: 4 }}>
+        {course.places.length}곳
       </div>
     </div>
   )

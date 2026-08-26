@@ -1,10 +1,12 @@
 /* Wanted Sans Variable — 로고를 제외한 앱 전체 기본 글꼴. @import는 파일 맨 앞에 와야 한다 */
 @import url('https://cdn.jsdelivr.net/gh/wanteddev/wanted-sans@v1.0.1/packages/wanted-sans/fonts/webfonts/variable/split/WantedSansVariable.min.css');
 
-/* 제주돌담체 — 로고("routiz") 전용 글꼴 */
+/* 제주돌담체 — 로고("routiz") 전용 글꼴.
+   깃허브 태그가 "v1.0"인데 URL엔 "v" 없이 "1.0"으로 돼 있어서 jsdelivr의 GitHub CDN이
+   그 버전을 못 찾아 404가 났었다(그래서 모바일에서 로고가 기본 폰트로 떴다) — "v1.0"으로 고침. */
 @font-face {
   font-family: 'JejuStoneWall';
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@1.0/EF_jejudoldam.woff2') format('woff2');
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2210-EF@v1.0/EF_jejudoldam.woff2') format('woff2');
   font-weight: normal;
   font-display: swap;
 }

@@ -40,6 +40,7 @@ function mapCourse(row: any): Course {
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
     theme: row.theme,
+    region: row.region ?? null,
     saved: row.saved,
   }
 }
@@ -77,6 +78,7 @@ export async function insertCourse(course: Course): Promise<Course> {
       start_time: course.startTime || null,
       author_id: course.authorId,
       theme: course.theme,
+      region: course.region,
       saved: true,
     })
     .select(COURSE_SELECT)
@@ -98,6 +100,7 @@ export async function updateCourseRow(id: string, patch: Partial<Course>) {
   if (patch.date !== undefined) row.date = patch.date || null
   if (patch.startTime !== undefined) row.start_time = patch.startTime || null
   if (patch.theme !== undefined) row.theme = patch.theme
+  if (patch.region !== undefined) row.region = patch.region
   if (patch.saved !== undefined) row.saved = patch.saved
   if (Object.keys(row).length === 0) return
   const { error } = await supabase.from('courses').update(row).eq('id', id)

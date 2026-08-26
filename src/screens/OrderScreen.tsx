@@ -68,13 +68,15 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
                   style={{ padding: 12 }}
                   onClick={() => setActive(i)}
                 >
-                  <div className="list-item">
-                    <span className={`num${active === i ? '' : ' ghost'}`}>{i + 1}</span>
+                  <div className="list-item" style={{ alignItems: 'flex-start' }}>
+                    <span className={`num${active === i ? '' : ' ghost'}`} style={{ marginTop: 1 }}>
+                      {i + 1}
+                    </span>
                     <div className="body">
                       <div className="name truncate">{place?.name}</div>
                       <div className="meta truncate">{place?.category}</div>
                     </div>
-                    <Thumb category={place?.category} border={false} />
+                    <Thumb category={place?.category} />
                     <span {...handle}>
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
                         <circle cx="4" cy="3" r="1.3" fill="currentColor" />

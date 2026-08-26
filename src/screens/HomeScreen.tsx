@@ -40,7 +40,9 @@ export default function HomeScreen() {
               </button>
             }
           />
-          <div className="section-title">내 코스</div>
+          <div className="section-title" style={{ fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif" }}>
+            내 코스
+          </div>
           {store.myCourses.map((c) => (
             <div className="card tap" key={c.id} onClick={() => navigate('/edit/' + c.id)}>
               <div className="bold">{c.title || '이름 없는 코스'}</div>
@@ -166,7 +168,7 @@ export default function HomeScreen() {
         )}
 
         {course.places.length > 0 && (
-          <div style={{ padding: '10px 20px calc(14px + var(--safe-b))' }}>
+          <div style={{ padding: '18px 20px calc(22px + var(--safe-b))' }}>
             <button
               className="btn primary block"
               disabled={course.places.length < 2}

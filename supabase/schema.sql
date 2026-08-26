@@ -130,6 +130,9 @@ create table public.courses (
   author_id uuid not null references auth.users (id) on delete cascade,
   share_token text not null unique default replace(gen_random_uuid()::text, '-', ''),
   theme text not null default '',
+  -- 탐색 화면 카드에 보여줄 대표 지역. 코스에 담긴 장소들에서 자동으로 뽑지 않고
+  -- 코스 저장 시 사용자가 직접 고른 값을 그대로 저장한다.
+  region text,
   saved boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
