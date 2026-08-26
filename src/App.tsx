@@ -35,7 +35,7 @@ export default function App() {
   // 최소 노출 시간(짧게 깜빡였다 사라지는 걸 막기 위해) + 실제 로그인 확인이 끝날 때까지 스플래시를 띄운다
   const [minTimeDone, setMinTimeDone] = useState(false)
   useEffect(() => {
-    const t = setTimeout(() => setMinTimeDone(true), 1200)
+    const t = setTimeout(() => setMinTimeDone(true), 3000)
     return () => clearTimeout(t)
   }, [])
   const showSplash = !minTimeDone || store.authLoading

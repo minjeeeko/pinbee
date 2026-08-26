@@ -48,9 +48,21 @@ export default function HomeScreen() {
             내 코스
           </div>
           {store.myCourses.map((c) => (
-            <div className="card tap" key={c.id} onClick={() => navigate('/edit/' + c.id)}>
-              <div className="bold">{c.title || '이름 없는 코스'}</div>
-              <div className="tiny muted">{c.places.length}곳</div>
+            <div className="card tap between" key={c.id} onClick={() => navigate('/edit/' + c.id)}>
+              <div style={{ minWidth: 0 }}>
+                <div className="bold truncate">{c.title || '이름 없는 코스'}</div>
+                <div className="tiny muted">{c.places.length}곳</div>
+              </div>
+              <button
+                className="btn xs"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  store.deleteCourse(c.id)
+                  store.toast('코스를 삭제했어요')
+                }}
+              >
+                삭제
+              </button>
             </div>
           ))}
         </div>
@@ -74,7 +86,7 @@ export default function HomeScreen() {
           insetBottom={16}
         />
 
-        <div className="map-float" style={{ top: 10 }}>
+        <div className="map-float" style={{ top: 14, left: 8, right: 12, gap: 6 }}>
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png"
             alt="routiz"
