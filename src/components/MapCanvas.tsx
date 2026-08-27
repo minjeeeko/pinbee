@@ -18,6 +18,10 @@ interface Props {
   /** 시트·카드에 가려지는 영역 (px) */
   insetTop?: number
   insetBottom?: number
+  /** places와 같은 순서로, 메모가 있는 장소는 핀 주위에 은은한 형광 글로우를 준다 */
+  memoFlags?: boolean[]
+  /** 확대·축소·전체보기 컨트롤 위치. 기본은 우하단, 'top-right'면 우상단에 놓는다(예: 프로필 이미지 바로 아래) */
+  toolsPosition?: 'bottom-right' | 'top-right'
 }
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
@@ -25,15 +29,30 @@ const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
 const KEY = '#111111'
 const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
+/** 메모 있음 표시 — 다른 화면의 형광펜 점과 같은 색을 은은한 글로우로 재사용한다 */
+const MEMO_GLOW = '0 0 0 4px rgba(251,225,0,.35),0 0 10px 3px rgba(251,225,0,.5)'
 
 function pinSize(showNumbers: boolean, active: boolean) {
   return showNumbers ? (active ? 26 : 22) : active ? 24 : 20
 }
 
 /** showNumbers면 순서 번호를, 아니면 카테고리 이모지를 동그란 핀 안에 작게 넣는다 */
-function pinIcon(index: number, showNumbers: boolean, active: boolean, color: string, category: Place['category']) {
+function pinIcon(
+  index: number,
+  showNumbers: boolean,
+  active: boolean,
+  color: string,
+  category: Place['category'],
+  hasMemo: boolean,
+) {
   const size = pinSize(showNumbers, active)
-  const ring = active ? `box-shadow:0 1px 4px rgba(17,17,17,.4),0 0 0 3px rgba(17,17,17,.22);` : `box-shadow:0 1px 4px rgba(17,17,17,.4);`
+  const shadows = [
+    'box-shadow:0 1px 4px rgba(17,17,17,.4)' + (active ? ',0 0 0 3px rgba(17,17,17,.22)' : ''),
+    hasMemo ? MEMO_GLOW : '',
+  ]
+    .filter(Boolean)
+    .join(',')
+  const ring = `${shadows};`
   if (showNumbers) {
     const label = `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 12 : 11}px;font-family:'Wanted Sans Variable',sans-serif;`
     return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${index + 1}</div>`
@@ -52,6 +71,8 @@ export default function MapCanvas({
   onSelect,
   insetTop = 0,
   insetBottom = 0,
+  memoFlags,
+  toolsPosition = 'bottom-right',
 }: Props) {
   const elRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -136,11 +157,12 @@ export default function MapCanvas({
     places.forEach((place, i) => {
       const active = activeIndex === i
       const color = CATEGORY_COLOR[place.category] ?? CATEGORY_COLOR.기타
-      const dot = pinIcon(i, showNumbers, active, color, place.category)
+      const hasMemo = memoFlags?.[i] ?? false
+      const dot = pinIcon(i, showNumbers, active, color, place.category, hasMemo)
       const size = pinSize(showNumbers, active)
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
-             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);padding:1px 5px;border-radius:4px;font-family:'Wanted Sans Variable',sans-serif;">${
+             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:1px 5px;border-radius:4px;font-family:'Wanted Sans Variable',sans-serif;">${
                place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
              }</span>
              ${dot}
@@ -193,7 +215,7 @@ export default function MapCanvas({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [places, showRoute, showNumbers, showLabels, activeIndex, legs, status])
+  }, [places, showRoute, showNumbers, showLabels, activeIndex, legs, status, memoFlags])
 
   const zoom = (delta: number) => {
     const map = mapRef.current
@@ -231,7 +253,10 @@ export default function MapCanvas({
         </div>
       )}
 
-      <div className="map-tools" style={{ bottom: insetBottom + 16 }}>
+      <div
+        className="map-tools"
+        style={toolsPosition === 'top-right' ? { top: insetTop + 4 } : { bottom: insetBottom + 16 }}
+      >
         <button className="map-tool icon" onClick={() => zoom(1)} aria-label="확대">
           +
         </button>

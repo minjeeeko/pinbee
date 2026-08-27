@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 import { navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
+import { PLACE_MAP } from '../data/places'
+import type { Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { Empty } from '../components/ui'
 import { PlaceEditorModal } from '../components/common'
@@ -62,7 +64,14 @@ export default function HomeScreen() {
     )
   }
 
-  const places = stats.places
+  // course.places(코스에 담긴 순서)와 지도에 그릴 장소·메모 여부가 인덱스까지 정확히
+  // 맞아떨어져야 아이콘 글로우가 엉뚱한 핀에 붙지 않는다 — stats.places는 같은 필터를
+  // 거치지만 memo 정보가 없어 여기서 둘을 함께 계산한다.
+  const resolvedPlaces = course.places
+    .map((cp) => ({ place: PLACE_MAP[cp.placeId], memo: !!cp.memo }))
+    .filter((e): e is { place: Place; memo: boolean } => !!e.place)
+  const places = resolvedPlaces.map((e) => e.place)
+  const memoFlags = resolvedPlaces.map((e) => e.memo)
   const placeCount = course.places.length
   const hasPlaces = placeCount > 0
 
@@ -80,17 +89,29 @@ export default function HomeScreen() {
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
           insetTop={70}
           insetBottom={72}
+          memoFlags={memoFlags}
+          toolsPosition="top-right"
         />
 
-        <div className="map-float" style={{ top: 14, left: 8, right: 12, gap: 6 }}>
+        <div className="map-float" style={{ top: 14, left: 8, right: 12, gap: 6, justifyContent: 'space-between' }}>
           <img
             src="https://zsvndzfbnlwdsdeyxarj.supabase.co/storage/v1/object/public/service/logo_1.png?v=2"
             alt="routiz"
             style={{ height: 44, width: 'auto', flexShrink: 0 }}
           />
-          <button className="searchbar" style={{ flex: 1 }} onClick={() => navigate('/search/' + course.id)}>
-            <span className="placeholder">장소·지역 검색</span>
-          </button>
+          <button
+            className="tap"
+            onClick={() => navigate('/me')}
+            aria-label="내 정보"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 999,
+              border: '1px solid var(--border)',
+              flexShrink: 0,
+              background: store.user?.avatarUrl ? `center/cover url(${store.user.avatarUrl})` : 'var(--surface)',
+            }}
+          />
         </div>
 
         {hasPlaces && (
@@ -104,15 +125,15 @@ export default function HomeScreen() {
 
         <div style={{ position: 'absolute', left: 0, right: 0, bottom: 16, display: 'flex', justifyContent: 'center', gap: 8 }}>
           {placeCount < 2 ? (
-            <button className="btn sm primary" onClick={() => navigate('/search/' + course.id)}>
+            <button className="btn sm primary" style={{ borderRadius: 999 }} onClick={() => navigate('/search/' + course.id)}>
               장소 추가하기
             </button>
           ) : (
             <>
-              <button className="btn sm" onClick={() => navigate('/search/' + course.id)}>
+              <button className="btn sm" style={{ borderRadius: 999 }} onClick={() => navigate('/search/' + course.id)}>
                 장소 추가
               </button>
-              <button className="btn sm primary" onClick={() => navigate('/order/' + course.id)}>
+              <button className="btn sm primary" style={{ borderRadius: 999 }} onClick={() => navigate('/order/' + course.id)}>
                 코스 만들기
               </button>
             </>
