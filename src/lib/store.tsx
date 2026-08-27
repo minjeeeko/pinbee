@@ -312,7 +312,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       },
       // 장소를 하나라도 추가해 코스를 "시작"한 경우에만 내 코스 목록에 노출한다
       myCourses: state.courses.filter((c) => c.authorId === myId && c.places.length > 0),
-      publicCourses: state.courses.filter((c) => c.visibility === 'public' && !c.hidden),
+      // saved(실제로 저장 완료)가 아니면 탐색에 노출하지 않는다 — 저장 화면의 "공개로 게시"
+      // 스위치는 저장 버튼을 누르기 전에도 바로 visibility를 'public'으로 바꿔두기 때문에,
+      // saved 체크가 없으면 아직 저장하지 않은(또는 저장에 실패한) 내 작성 중인 코스가
+      // 탐색에 그대로 노출돼버린다 — 그 상태로 탐색에서 그 코스를 보고 "내 코스"로 돌아오면
+      // 실제로 만들고 있지도 않았던 코스가 코스 만들기 단계로 나타나는 것처럼 보인다.
+      publicCourses: state.courses.filter((c) => c.visibility === 'public' && c.saved && !c.hidden),
       draft: state.courses.find((c) => c.id === state.draftId) ?? null,
       setDraftId: (id) => setState((s) => ({ ...s, draftId: id })),
       startNewCourse: () => {
