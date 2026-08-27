@@ -6,12 +6,14 @@ import { PLACE_MAP } from '../data/places'
 import type { Place } from '../lib/types'
 import MapCanvas from '../components/MapCanvas'
 import { Empty } from '../components/ui'
+import { CategoryIcon } from '../components/CategoryIcon'
 import { PlaceEditorModal } from '../components/common'
 
 export default function HomeScreen() {
   const store = useStore()
   const course = store.draft
   const [editing, setEditing] = useState<string | null>(null)
+  const [placesOpen, setPlacesOpen] = useState(false)
 
   const stats = useMemo(
     () => (course ? courseStats(course, { realDriving: true }) : null),
@@ -68,8 +70,8 @@ export default function HomeScreen() {
   // 맞아떨어져야 아이콘 글로우가 엉뚱한 핀에 붙지 않는다 — stats.places는 같은 필터를
   // 거치지만 memo 정보가 없어 여기서 둘을 함께 계산한다.
   const resolvedPlaces = course.places
-    .map((cp) => ({ place: PLACE_MAP[cp.placeId], memo: !!cp.memo }))
-    .filter((e): e is { place: Place; memo: boolean } => !!e.place)
+    .map((cp) => ({ uid: cp.uid, place: PLACE_MAP[cp.placeId], memo: !!cp.memo }))
+    .filter((e): e is { uid: string; place: Place; memo: boolean } => !!e.place)
   const places = resolvedPlaces.map((e) => e.place)
   const memoFlags = resolvedPlaces.map((e) => e.memo)
   const placeCount = course.places.length
@@ -115,11 +117,58 @@ export default function HomeScreen() {
         </div>
 
         {hasPlaces && (
-          <div style={{ position: 'absolute', top: 70, left: 20 }}>
-            <span className="pill">
+          <div style={{ position: 'absolute', top: 70, left: 20, maxWidth: 'calc(100% - 40px)' }}>
+            <button
+              className="pill tap"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}
+              onClick={() => setPlacesOpen((v) => !v)}
+              aria-expanded={placesOpen}
+            >
               {course.saved && course.title ? `${course.title} · ` : ''}
               {placeCount}곳
-            </span>
+              <span aria-hidden style={{ fontSize: 9, transform: placesOpen ? 'rotate(180deg)' : 'none' }}>
+                ▾
+              </span>
+            </button>
+
+            {placesOpen && (
+              <div
+                className="card"
+                style={{ marginTop: 6, width: 220, maxHeight: 260, overflowY: 'auto', padding: 6 }}
+              >
+                {resolvedPlaces.map(({ uid, place, memo }) => (
+                  <button
+                    key={uid}
+                    className="tap"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      width: '100%',
+                      padding: '8px 6px',
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                    }}
+                    onClick={() => {
+                      setEditing(uid)
+                      setPlacesOpen(false)
+                    }}
+                  >
+                    <CategoryIcon category={place.category} size={16} />
+                    <span className="small truncate" style={{ flex: 1 }}>
+                      {place.name}
+                    </span>
+                    {memo && (
+                      <span
+                        aria-hidden
+                        style={{ width: 6, height: 6, borderRadius: 999, background: '#fbe100', flexShrink: 0 }}
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
