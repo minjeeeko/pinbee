@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
 
   const url = new URL('https://naverapihub.apigw.ntruss.com/search/v1/local')
   url.searchParams.set('query', query)
-  url.searchParams.set('display', '5')
+  url.searchParams.set('display', '7')
 
   try {
     const res = await fetch(url, {

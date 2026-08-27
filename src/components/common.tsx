@@ -153,13 +153,39 @@ export function PlaceEditorModal({
 
 export function CourseCard({ course, onClick }: { course: Course; onClick: () => void }) {
   return (
-    <div className="card tap" onClick={onClick} style={{ cursor: 'pointer' }}>
-      <div className="bold truncate">{course.title || '이름 없는 코스'}</div>
-      <div className="tiny muted" style={{ marginTop: 3 }}>
-        {course.authorName} · {course.region ?? '지역 미지정'} · {course.theme}
-      </div>
-      <div className="tiny muted" style={{ marginTop: 4 }}>
-        {course.places.length}곳
+    <div className="card tap" onClick={onClick} style={{ cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
+      {course.coverImageUrl ? (
+        <img
+          src={course.coverImageUrl}
+          alt=""
+          style={{ width: 64, height: 64, borderRadius: 'var(--r-btn)', objectFit: 'cover', flex: 'none' }}
+        />
+      ) : (
+        <span
+          aria-hidden
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 'var(--r-btn)',
+            flex: 'none',
+            background: 'var(--surface)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 22,
+          }}
+        >
+          📍
+        </span>
+      )}
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div className="bold truncate">{course.title || '이름 없는 코스'}</div>
+        <div className="tiny muted" style={{ marginTop: 3 }}>
+          {course.authorName} · {course.region ?? '지역 미지정'} · {course.theme}
+        </div>
+        <div className="tiny muted" style={{ marginTop: 4 }}>
+          {course.places.length}곳
+        </div>
       </div>
     </div>
   )

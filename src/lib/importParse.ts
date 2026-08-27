@@ -28,13 +28,19 @@ export function similarity(a: string, b: string) {
   return (2 * hit) / (A.length + B.length)
 }
 
-/** 붙여넣거나 이미지에서 인식한 텍스트를 한 줄당 하나의 장소 후보 문자열로 나눈다 */
-export function parseText(text: string): string[] {
-  return text
-    .split(/[\n,·|]/)
-    .map((l) => l.replace(/^[\s\-*·•\d.)\]]+/, '').trim())
-    .filter((l) => l.length >= 2)
-    .slice(0, 12)
+/**
+ * 검색어가 상호명과 얼마나 정확히 맞아떨어지는지 점수를 매긴다(0~1). 완전일치 > 이름 안의
+ * 완결된 단어와 일치("야키토리 시오"의 "시오") > 접두어 일치("시오카레") > 부분 포함 > 그 외
+ * 유사도 순으로 등급을 나눠서, 상호명 뒤쪽 단어로 검색해도 그 장소가 앞쪽 글자만 우연히 겹치는
+ * 다른 장소들보다 먼저 뜨게 한다.
+ */
+export function nameMatchScore(query: string, name: string): number {
+  const q = query.trim()
+  const n = name.trim()
+  if (!q || !n) return 0
+  if (n === q) return 1
+  if (n.split(/\s+/).includes(q)) return 0.95
+  if (n.startsWith(q)) return 0.85
+  if (n.includes(q)) return 0.75
+  return similarity(q, n) * 0.6
 }
-
-export const SUPPORTED_IMAGE = ['image/png', 'image/jpeg', 'image/webp', 'image/heic']

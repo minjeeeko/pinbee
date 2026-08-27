@@ -72,9 +72,11 @@ export default function HomeScreen() {
 
   const places = stats.places
 
+  const hasPlaces = course.places.length > 0
+
   return (
     <div className="screen">
-      {/* 지도 — 남는 공간을 모두 채운다 */}
+      {/* 지도 — 남는 공간을 모두 채운다. 장소를 하나도 안 담았으면 하단 패널 없이 지도가 전체 화면을 채운다 */}
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <MapCanvas
           places={places}
@@ -83,7 +85,7 @@ export default function HomeScreen() {
           activeIndex={null}
           onSelect={(i) => setEditing(course.places[i]?.uid ?? null)}
           insetTop={70}
-          insetBottom={16}
+          insetBottom={hasPlaces ? 16 : 72}
         />
 
         <div className="map-float" style={{ top: 14, left: 8, right: 12, gap: 6 }}>
@@ -96,108 +98,101 @@ export default function HomeScreen() {
             <span className="placeholder">장소·지역 검색</span>
           </button>
         </div>
+
+        {!hasPlaces && (
+          <button
+            className="btn primary block"
+            style={{ position: 'absolute', left: 20, right: 20, bottom: 16 }}
+            onClick={() => navigate('/search/' + course.id)}
+          >
+            장소 추가하기
+          </button>
+        )}
       </div>
 
-      {/* 하단 장소 카드 — 내용에 맞춘 고정 높이 패널 */}
-      <div
-        style={{
-          flex: 'none',
-          display: 'flex',
-          flexDirection: 'column',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--canvas)',
-        }}
-      >
-        <div style={{ padding: '16px 20px 8px' }}>
-          {course.saved && course.title && (
-            <div
-              className="bold truncate"
-              style={{ fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif", fontSize: 17, lineHeight: '27px' }}
-            >
-              {course.title}
-            </div>
-          )}
-          <div className="tiny muted">{course.places.length}곳</div>
-        </div>
+      {/* 하단 장소 카드 — 장소를 하나라도 담아 코스 만들기가 시작되면 나타나는 고정 높이 패널 */}
+      {hasPlaces && (
+        <div
+          style={{
+            flex: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            borderTop: '1px solid var(--border)',
+            background: 'var(--canvas)',
+          }}
+        >
+          <div style={{ padding: '16px 20px 8px' }}>
+            {course.saved && course.title && (
+              <div
+                className="bold truncate"
+                style={{ fontFamily: "'JejuStoneWall', 'Wanted Sans Variable', sans-serif", fontSize: 17, lineHeight: '27px' }}
+              >
+                {course.title}
+              </div>
+            )}
+            <div className="tiny muted">{course.places.length}곳</div>
+          </div>
 
-        {course.places.length === 0 ? (
-          <Empty
-            title="아직 추가한 장소가 없어요"
-            desc="검색해서 코스를 시작하세요."
-            action={
-              <button className="btn primary" onClick={() => navigate('/search/' + course.id)}>
-                장소 검색하기
-              </button>
-            }
-          />
-        ) : (
-          <>
-            <div
-              ref={rowRef}
-              className="no-scrollbar"
-              style={{
-                height: 84,
-                display: 'flex',
-                gap: 10,
-                overflowX: 'auto',
-                padding: '0 20px 4px',
-              }}
-            >
-              {course.places.map((cp) => {
-                const place = PLACE_MAP[cp.placeId]
-                return (
-                  <div
-                    key={cp.uid}
-                    className="card tap"
-                    style={{
-                      flex: 'none',
-                      width: 152,
-                      height: 80,
-                      padding: 12,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 5,
-                      overflow: 'hidden',
-                      marginTop: 0,
-                    }}
-                    onClick={() => setEditing(cp.uid)}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
-                      <div
-                        className="name truncate"
-                        style={{ fontWeight: 700, fontSize: 14, lineHeight: '19px' }}
-                      >
-                        {place?.name}
-                      </div>
-                      {place && <CategoryIcon category={place.category} size={17} />}
+          <div
+            ref={rowRef}
+            className="no-scrollbar"
+            style={{
+              height: 84,
+              display: 'flex',
+              gap: 10,
+              overflowX: 'auto',
+              padding: '0 20px 4px',
+            }}
+          >
+            {course.places.map((cp) => {
+              const place = PLACE_MAP[cp.placeId]
+              return (
+                <div
+                  key={cp.uid}
+                  className="card tap"
+                  style={{
+                    flex: 'none',
+                    width: 152,
+                    height: 80,
+                    padding: 12,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 5,
+                    overflow: 'hidden',
+                    marginTop: 0,
+                  }}
+                  onClick={() => setEditing(cp.uid)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 6 }}>
+                    <div className="name truncate" style={{ fontWeight: 700, fontSize: 14, lineHeight: '19px' }}>
+                      {place?.name}
                     </div>
-                    <span
-                      aria-hidden
-                      style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: 999,
-                        flexShrink: 0,
-                        background: cp.memo ? '#fbe100' : 'transparent',
-                      }}
-                    />
+                    {place && <CategoryIcon category={place.category} size={17} />}
                   </div>
-                )
-              })}
-            </div>
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: 999,
+                      flexShrink: 0,
+                      background: cp.memo ? '#fbe100' : 'transparent',
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '6px 0 2px' }}>
-              <button className="scroll-nav" onClick={() => scrollCards(-1)} aria-label="이전 카드">
-                ‹
-              </button>
-              <button className="scroll-nav" onClick={() => scrollCards(1)} aria-label="다음 카드">
-                ›
-              </button>
-            </div>
-          </>
-        )}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, padding: '6px 0 2px' }}>
+            <button className="scroll-nav" onClick={() => scrollCards(-1)} aria-label="이전 카드">
+              ‹
+            </button>
+            <button className="scroll-nav" onClick={() => scrollCards(1)} aria-label="다음 카드">
+              ›
+            </button>
+          </div>
 
-        {course.places.length > 0 && (
           <div style={{ padding: '18px 20px calc(22px + var(--safe-b))' }}>
             <button
               className="btn primary block"
@@ -207,8 +202,8 @@ export default function HomeScreen() {
               코스 만들기
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <PlaceEditorModal
         open={!!editing}

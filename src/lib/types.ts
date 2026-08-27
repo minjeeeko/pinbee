@@ -48,6 +48,8 @@ export interface Course {
   title: string
   description: string
   coverPlaceId: string | null
+  /** 코스 등록 시 사용자가 직접 올린 대표 사진. 없으면 탐색 카드에서 기본 자리표시자를 보여준다 */
+  coverImageUrl: string | null
   visibility: Visibility
   /** 관리자 숨김 처리 */
   hidden: boolean

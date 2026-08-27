@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
-import { useStore, uid } from '../lib/store'
+import { useStore } from '../lib/store'
 import { courseHasPlace } from '../lib/course'
 import { PLACES, CATEGORIES, PLACE_MAP, CATEGORY_COLOR, registerPlace } from '../data/places'
-import { parseText, similarity, SUPPORTED_IMAGE } from '../lib/importParse'
-import { searchPlacesByQuery } from '../lib/placeSearch'
-import { recognizeImageText } from '../lib/ocr'
+import { nameMatchScore, similarity } from '../lib/importParse'
 import { geocodeAddress, geocodeResultToPlace } from '../lib/geocode'
 import { searchLocalPlaces } from '../lib/localSearch'
 import type { Category, Place } from '../lib/types'
@@ -13,30 +11,15 @@ import MapCanvas from '../components/MapCanvas'
 import { AppBar, Empty, Modal, Thumb } from '../components/ui'
 import { josa } from '../lib/text'
 
-interface ImportLine {
-  id: string
-  raw: string
-  results: Place[]
-  loading: boolean
-  error?: string
-}
-
 export default function SearchScreen({ courseId }: { courseId?: string }) {
   const store = useStore()
   const course = courseId ? store.getCourse(courseId) : store.draft
-  const [mode, setMode] = useState<'search' | 'image'>('search')
   const [q, setQ] = useState('')
   const [dupTarget, setDupTarget] = useState<Place | null>(null)
 
   const [geoResults, setGeoResults] = useState<Place[]>([])
   const [geoLoading, setGeoLoading] = useState(false)
   const [categoryPickFor, setCategoryPickFor] = useState<Place | null>(null)
-
-  const [importLines, setImportLines] = useState<ImportLine[]>([])
-  const [pasteText, setPasteText] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [importError, setImportError] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const results = useMemo(() => {
@@ -60,7 +43,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   // 검색어를 잠깐 멈췄을 때만 요청해 타이핑 중 API를 과도하게 호출하지 않는다.
   useEffect(() => {
     const query = q.trim()
-    if (mode !== 'search' || !query) {
+    if (!query) {
       setGeoResults([])
       setGeoLoading(false)
       return
@@ -77,8 +60,12 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       ])
         .then(([local, geocoded]) => {
           if (cancelled) return
+          // 네이버가 준 순서를 그대로 믿지 않고, 검색어가 상호명과 얼마나 정확히 맞는지로 다시
+          // 정렬한다 — 그래야 "야키토리 시오"처럼 검색어가 뒤쪽 단어인 곳도, 검색어로 시작하기만
+          // 하는 다른 상호명들보다 먼저 뜬다.
+          const rankedLocal = [...local].sort((a, b) => nameMatchScore(query, b.name) - nameMatchScore(query, a.name))
           // 상호명 검색 결과를 우선하고, 좌표가 거의 같은(약 11m 이내) 주소 검색 결과는 중복이라 뺀다
-          const merged = [...local]
+          const merged = [...rankedLocal]
           for (const g of geocoded) {
             const isDup = merged.some((m) => Math.abs(m.lat - g.lat) < 0.0001 && Math.abs(m.lng - g.lng) < 0.0001)
             if (!isDup) merged.push(g)
@@ -96,7 +83,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [q, mode])
+  }, [q])
 
   // 지도 미리보기: 이미 코스에 담은 장소는 계속 남아있고(누적), 지금 검색 중인 결과도 함께 보여줘서
   // 검색해서 찾은 장소가 어디인지 바로 지도에서 확인하고(자동으로 그 위치로 이동) 담을 수 있게 한다.
@@ -136,66 +123,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     }
     store.addPlaceToCourse(course.id, place.id)
     store.toast(`${place.name}${josa(place.name, '을', '를')} 코스에 추가했어요`)
-  }
-
-  // 후보 줄 하나를 실제 검색(내장 40곳 + 상호명 검색 + 지오코딩)에 붙여서, 그 줄만의
-  // 검색 결과 목록을 채워 넣는다 — 사용자가 줄마다 나온 후보 중 하나를 직접 골라 담게 한다.
-  const runSearchFor = (lineId: string, raw: string) => {
-    searchPlacesByQuery(raw, 6)
-      .then((results) => {
-        setImportLines((list) => list.map((l) => (l.id === lineId ? { ...l, results, loading: false } : l)))
-      })
-      .catch(() => {
-        setImportLines((list) =>
-          list.map((l) => (l.id === lineId ? { ...l, loading: false, error: '검색 중 문제가 생겼어요.' } : l)),
-        )
-      })
-  }
-
-  const addLines = (raws: string[]) => {
-    const newLines: ImportLine[] = raws.map((raw) => ({ id: uid('il'), raw, results: [], loading: true }))
-    setImportLines((list) => [...list, ...newLines])
-    newLines.forEach((l) => runSearchFor(l.id, l.raw))
-  }
-
-  const removeLine = (id: string) => setImportLines((list) => list.filter((l) => l.id !== id))
-
-  const runText = () => {
-    if (!pasteText.trim()) {
-      setImportError('붙여넣은 텍스트가 없어요.')
-      return
-    }
-    setImportError('')
-    const found = parseText(pasteText)
-    if (found.length === 0) {
-      setImportError('텍스트에서 장소 후보를 찾지 못했어요. 한 줄에 한 장소씩 입력해보세요.')
-      return
-    }
-    addLines(found)
-    setPasteText('')
-  }
-
-  const runImage = async (file: File) => {
-    if (!SUPPORTED_IMAGE.includes(file.type)) {
-      setImportError('PNG · JPG · WEBP 이미지만 인식할 수 있어요.')
-      return
-    }
-    setBusy(true)
-    setImportError('')
-    try {
-      const text = await recognizeImageText(file)
-      const found = parseText(text)
-      if (found.length === 0) {
-        setImportError('이미지에서 상호명·주소를 인식하지 못했어요. 더 선명한 캡처를 올려보세요.')
-        return
-      }
-      addLines(found)
-    } catch (e) {
-      setImportError((e as Error).message || '이미지를 인식하지 못했어요.')
-    } finally {
-      setBusy(false)
-      if (fileRef.current) fileRef.current.value = ''
-    }
   }
 
   const saveOrPick = (place: Place) => {
@@ -268,10 +195,7 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
             ref={inputRef}
             autoFocus
             value={q}
-            onChange={(e) => {
-              setQ(e.target.value)
-              setMode('search')
-            }}
+            onChange={(e) => setQ(e.target.value)}
             placeholder="장소명 · 지역 · 주소 검색"
           />
           {q && (
@@ -282,18 +206,15 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
         </div>
       </div>
 
-      {mode === 'search' && q.trim() === '' && (
+      {q.trim() === '' && (
         <div className="scroll pad">
-          <button className="btn block" onClick={() => setMode('image')}>
-            이미지 붙여넣기
-          </button>
-          <div className="tiny muted" style={{ marginTop: 12, textAlign: 'center' }}>
-            장소명이나 지역을 검색하거나, 캡처한 이미지를 붙여넣어 장소를 찾아보세요.
+          <div className="tiny muted" style={{ textAlign: 'center' }}>
+            장소명이나 지역을 검색해보세요.
           </div>
         </div>
       )}
 
-      {mode === 'search' && q.trim() !== '' && (
+      {q.trim() !== '' && (
         <>
           <div style={{ position: 'relative', height: 168, margin: '0 20px', borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)' }}>
             <MapCanvas places={searchMapPlaces} showRoute={false} showNumbers={false} />
@@ -325,86 +246,6 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
             )}
           </div>
         </>
-      )}
-
-      {mode === 'image' && (
-        <div className="scroll pad">
-          <button className="textbtn" onClick={() => setMode('search')} style={{ marginBottom: 6 }}>
-            검색으로 돌아가기
-          </button>
-
-          <div className="grid2" style={{ marginBottom: 14 }}>
-            <button className="btn ghost" style={{ height: 76, flexDirection: 'column', gap: 2 }} onClick={() => fileRef.current?.click()}>
-              <span>캡처 이미지</span>
-              <span className="tiny muted">업로드</span>
-            </button>
-            <button
-              className="btn ghost"
-              style={{ height: 76, flexDirection: 'column', gap: 2 }}
-              onClick={() => document.getElementById('paste-area')?.focus()}
-            >
-              <span>텍스트</span>
-              <span className="tiny muted">붙여넣기</span>
-            </button>
-          </div>
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={(e) => {
-              const f = e.target.files?.[0]
-              if (f) runImage(f)
-            }}
-          />
-
-          <label className="field">
-            <span className="label">장소 목록 텍스트</span>
-            <textarea
-              id="paste-area"
-              className="textarea"
-              placeholder={'연남동 브런치하우스\n망원 베이커리\n한강 나들목 산책로'}
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-            />
-          </label>
-          <button className="btn block" onClick={runText} disabled={busy}>
-            텍스트에서 장소 인식
-          </button>
-
-          {busy && <div className="banner" style={{ marginTop: 12 }}>이미지에서 글자를 인식하는 중이에요…</div>}
-          {importError && (
-            <div className="banner alert" style={{ marginTop: 12 }}>
-              {importError}
-            </div>
-          )}
-
-          {importLines.length === 0 ? (
-            <div className="tiny muted" style={{ marginTop: 16 }}>
-              캡처 이미지를 올리거나 텍스트를 붙여넣으면 줄마다 검색한 장소 목록이 카드로 표시돼요. 원본 이미지는 인식 후 보관하지 않아요.
-            </div>
-          ) : (
-            importLines.map((line) => (
-              <div key={line.id} style={{ marginTop: 18 }}>
-                <div className="between" style={{ marginBottom: 8 }}>
-                  <span className="small bold truncate">“{line.raw}”</span>
-                  <button className="textbtn" onClick={() => removeLine(line.id)}>
-                    지우기
-                  </button>
-                </div>
-                {line.loading ? (
-                  <div className="tiny muted">검색하는 중…</div>
-                ) : line.error ? (
-                  <div className="tiny muted">{line.error}</div>
-                ) : line.results.length === 0 ? (
-                  <div className="tiny muted">일치하는 장소를 찾지 못했어요.</div>
-                ) : (
-                  <div className="stack">{line.results.map((p) => resultCard(p))}</div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
       )}
 
       <div style={{ padding: '10px 20px calc(14px + var(--safe-b))', borderTop: '1px solid var(--border)', background: 'var(--canvas)' }}>

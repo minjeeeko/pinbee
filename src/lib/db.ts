@@ -29,6 +29,7 @@ function mapCourse(row: any): Course {
     title: row.title,
     description: row.description,
     coverPlaceId: row.cover_place_id,
+    coverImageUrl: row.cover_image_url,
     visibility: row.visibility,
     hidden: row.hidden,
     date: row.date ?? '',
@@ -72,6 +73,7 @@ export async function insertCourse(course: Course): Promise<Course> {
       title: course.title,
       description: course.description,
       cover_place_id: course.coverPlaceId,
+      cover_image_url: course.coverImageUrl,
       visibility: course.visibility,
       hidden: false,
       date: course.date || null,
@@ -95,6 +97,7 @@ export async function updateCourseRow(id: string, patch: Partial<Course>) {
   if (patch.title !== undefined) row.title = patch.title
   if (patch.description !== undefined) row.description = patch.description
   if (patch.coverPlaceId !== undefined) row.cover_place_id = patch.coverPlaceId
+  if (patch.coverImageUrl !== undefined) row.cover_image_url = patch.coverImageUrl
   if (patch.visibility !== undefined) row.visibility = patch.visibility
   if (patch.hidden !== undefined) row.hidden = patch.hidden
   if (patch.date !== undefined) row.date = patch.date || null
@@ -297,6 +300,16 @@ export async function uploadAvatar(userId: string, file: File): Promise<string> 
   const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true })
   if (error) throw error
   const { data } = supabase.storage.from('avatars').getPublicUrl(path)
+  return data.publicUrl
+}
+
+/** course-covers 버킷의 본인 폴더(userId/...)에 업로드하고 공개 URL을 돌려준다 */
+export async function uploadCourseCover(userId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg'
+  const path = `${userId}/${Date.now()}.${ext}`
+  const { error } = await supabase.storage.from('course-covers').upload(path, file, { upsert: true })
+  if (error) throw error
+  const { data } = supabase.storage.from('course-covers').getPublicUrl(path)
   return data.publicUrl
 }
 

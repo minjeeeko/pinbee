@@ -35,6 +35,7 @@ export function newCourse(authorId: string, authorName: string): Course {
     title: '',
     description: '',
     coverPlaceId: null,
+    coverImageUrl: null,
     visibility: 'private',
     hidden: false,
     date: todayISO(),
@@ -110,6 +111,7 @@ interface StoreValue extends State {
   resolveReport: (reportId: string, status: Report['status']) => void
   updateProfile: (patch: Partial<Pick<User, 'name' | 'ageGroup' | 'referralSource' | 'expectedFeatures'>>) => Promise<void>
   uploadAvatar: (file: File) => Promise<void>
+  uploadCourseCover: (courseId: string, file: File) => Promise<void>
 }
 
 const Ctx = createContext<StoreValue | null>(null)
@@ -476,6 +478,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         const url = await db.uploadAvatar(state.user.id, file)
         await db.updateProfile(state.user.id, { avatarUrl: url })
         setState((s) => (s.user ? { ...s, user: { ...s.user, avatarUrl: url } } : s))
+      },
+      uploadCourseCover: async (courseId, file) => {
+        if (!state.user) throw new Error('로그인이 필요해요')
+        const url = await db.uploadCourseCover(state.user.id, file)
+        patchCourse(courseId, (c) => ({ ...c, coverImageUrl: url }))
+        if (isSavedCourseId(courseId)) {
+          db.updateCourseRow(courseId, { coverImageUrl: url }).catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
+        }
       },
     }
   }, [state, toasts, toast, patchCourse, patchPlaces, ensureGeocodedPlaces])

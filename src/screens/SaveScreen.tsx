@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { goBack, navigate } from '../lib/router'
 import { useStore } from '../lib/store'
 import { courseStats } from '../lib/course'
@@ -17,6 +17,9 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
   const [loginOpen, setLoginOpen] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [coverUploading, setCoverUploading] = useState(false)
+  const [coverError, setCoverError] = useState('')
+  const coverFileRef = useRef<HTMLInputElement>(null)
   const stats = useMemo(
     () => (course ? courseStats(course, { realDriving: true }) : null),
     [course, store.directionsVersion],
@@ -74,6 +77,27 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
     navigate('/me')
   }
 
+  const pickCover = () => {
+    if (!store.user) {
+      setLoginOpen(true)
+      return
+    }
+    coverFileRef.current?.click()
+  }
+
+  const uploadCover = async (file: File) => {
+    setCoverError('')
+    setCoverUploading(true)
+    try {
+      await store.uploadCourseCover(course.id, file)
+    } catch (e) {
+      setCoverError((e as Error).message || '사진을 올리지 못했어요.')
+    } finally {
+      setCoverUploading(false)
+      if (coverFileRef.current) coverFileRef.current.value = ''
+    }
+  }
+
   return (
     <div className="screen">
       <AppBar
@@ -84,6 +108,45 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
       />
 
       <div className="scroll pad">
+        <div className="field">
+          <span className="label">대표 사진</span>
+          <button
+            className="tap"
+            onClick={pickCover}
+            disabled={coverUploading}
+            style={{
+              width: '100%',
+              height: 140,
+              borderRadius: 'var(--r-card)',
+              border: '1px solid var(--border)',
+              background: course.coverImageUrl ? `url(${course.coverImageUrl}) center/cover` : 'var(--surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+            }}
+          >
+            {coverUploading ? (
+              <span className="tiny muted">올리는 중…</span>
+            ) : !course.coverImageUrl ? (
+              <span className="tiny muted">탭해서 사진 올리기</span>
+            ) : (
+              <span className="pill dark">사진 변경</span>
+            )}
+          </button>
+          <input
+            ref={coverFileRef}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) uploadCover(f)
+            }}
+          />
+          {coverError && <div className="banner alert" style={{ marginTop: 8 }}>{coverError}</div>}
+        </div>
+
         <label className="field">
           <span className="label">코스 이름</span>
           <input

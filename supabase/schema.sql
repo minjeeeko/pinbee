@@ -123,6 +123,8 @@ create table public.courses (
   title text not null default '',
   description text not null default '',
   cover_place_id text references public.places (id) on delete set null,
+  -- 코스 등록 시 사용자가 직접 올린 대표 사진 (course-covers 버킷의 공개 URL). 안 올렸으면 null
+  cover_image_url text,
   visibility text not null default 'private' check (visibility in ('private', 'public')),
   hidden boolean not null default false,
   date date,
@@ -302,6 +304,25 @@ create policy "아바타 수정은 본인 폴더만" on storage.objects
 
 create policy "아바타 삭제는 본인 폴더만" on storage.objects
   for delete using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ------------------------------------------------------------
+-- 10. course-covers — 코스 대표 사진 Storage 버킷 + 정책 (본인 폴더에만 쓰기, 조회는 공개)
+-- ------------------------------------------------------------
+insert into storage.buckets (id, name, public)
+values ('course-covers', 'course-covers', true)
+on conflict (id) do nothing;
+
+create policy "코스 사진은 누구나 조회" on storage.objects
+  for select using (bucket_id = 'course-covers');
+
+create policy "코스 사진 업로드는 본인 폴더에만" on storage.objects
+  for insert with check (bucket_id = 'course-covers' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "코스 사진 수정은 본인 폴더만" on storage.objects
+  for update using (bucket_id = 'course-covers' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "코스 사진 삭제는 본인 폴더만" on storage.objects
+  for delete using (bucket_id = 'course-covers' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ============================================================
 -- Row Level Security
