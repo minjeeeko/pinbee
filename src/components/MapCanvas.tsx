@@ -162,7 +162,7 @@ export default function MapCanvas({
       const size = pinSize(showNumbers, active)
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
-             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:1px 5px;border-radius:4px;font-family:'Wanted Sans Variable',sans-serif;">${
+             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:2px 8px;border-radius:999px;font-family:'Wanted Sans Variable',sans-serif;">${
                place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
              }</span>
              ${dot}
