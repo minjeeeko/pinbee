@@ -128,7 +128,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
       />
 
       <div style={{ position: 'relative', height: '36%', minHeight: 190, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
-        <MapCanvas places={stats.places} showRoute legs={stats.legs} seed={13} />
+        <MapCanvas places={stats.places} showRoute={false} legs={stats.legs} seed={13} />
       </div>
 
       <div className="scroll pad" style={{ marginTop: 12 }}>
@@ -173,9 +173,7 @@ export default function PublicCourseScreen({ courseId, token }: { courseId?: str
                     className={`leg${leg.minutes === null ? ' error' : ''}`}
                     style={{ borderLeft: 'none', margin: '6px 0 0', paddingLeft: 0 }}
                   >
-                    <span className="seg-btn">
-                      {TRANSPORT_LABEL[leg.transport]} · {leg.distanceKm.toFixed(1)}km
-                    </span>
+                    <span className="seg-btn">{TRANSPORT_LABEL[leg.transport]}</span>
                   </div>
                 )}
               </div>

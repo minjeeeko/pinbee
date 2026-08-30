@@ -82,6 +82,23 @@ export const CATEGORY_COLOR: Record<Place['category'], string> = {
   기타: '#4a3aa7',
 }
 
+const GEO_PLACES_KEY = 'routiz.geoPlaces.v1'
+
+function loadPersistedGeoPlaces(): Record<string, Place> {
+  try {
+    const raw = localStorage.getItem(GEO_PLACES_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+// 주소·상호명 검색으로 찾은 장소(p-geo-)는 내장 40곳과 달리 이 브라우저 메모리에만 있던
+// 상태라, 아직 저장하지 않은(로컬) 코스에 담아두고 새로고침하면 PLACE_MAP이 초기화되며
+// 다시는 못 찾게 된다 — 그 결과 "담은 장소 수"는 그대로인데 화면엔 아무것도 안 보이는
+// 상태가 된다. 앱을 열자마자 이전에 등록해둔 적 있는 geo 장소를 미리 채워 넣는다.
+Object.assign(PLACE_MAP, loadPersistedGeoPlaces())
+
 /**
  * 주소 검색(Geocoding)으로 새로 찾은 장소를 실행 중에 PLACE_MAP에 등록한다.
  * PLACE_MAP은 내장 40곳 조회에도 쓰이는 단일 참조 테이블이라, 여기에 더해두면
@@ -89,4 +106,13 @@ export const CATEGORY_COLOR: Record<Place['category'], string> = {
  */
 export function registerPlace(place: Place) {
   PLACE_MAP[place.id] = place
+  if (place.id.startsWith('p-geo-')) {
+    try {
+      const stored = loadPersistedGeoPlaces()
+      stored[place.id] = place
+      localStorage.setItem(GEO_PLACES_KEY, JSON.stringify(stored))
+    } catch {
+      /* 저장 공간이 없으면 이번 세션에서만 쓰고 조용히 넘어간다 */
+    }
+  }
 }

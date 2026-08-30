@@ -77,7 +77,6 @@ export function LegRow({
         ) : (
           <span className="seg-btn">{TRANSPORT_LABEL[leg.transport]}</span>
         )}
-        <span className="tiny">{leg.distanceKm.toFixed(1)}km</span>
       </div>
       {leg.minutes === null && (
         <div className="banner alert" style={{ margin: '4px 0 8px 28px' }}>

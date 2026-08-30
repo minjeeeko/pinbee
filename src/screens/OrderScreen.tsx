@@ -34,7 +34,7 @@ export default function OrderScreen({ courseId }: { courseId?: string }) {
       <div style={{ position: 'relative', height: '40%', minHeight: 200, margin: '0 20px', borderRadius: 16, overflow: 'hidden', border: '1px solid var(--border)' }}>
         <MapCanvas
           places={stats.places}
-          showRoute
+          showRoute={false}
           legs={stats.legs}
           activeIndex={active}
           onSelect={setActive}

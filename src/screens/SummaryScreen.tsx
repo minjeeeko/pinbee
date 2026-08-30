@@ -57,7 +57,7 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <MapCanvas
           places={stats.places}
-          showRoute
+          showRoute={false}
           legs={stats.legs}
           activeIndex={active}
           onSelect={setActive}
@@ -92,11 +92,10 @@ export default function SummaryScreen({ courseId }: { courseId?: string }) {
                 <div className="stack">
                   {stats.legs.map((leg, i) => (
                     <div key={i} className="card flat" style={{ padding: 10, background: 'var(--map-base)' }}>
-                      <div className="between" style={{ marginBottom: 6 }}>
+                      <div style={{ marginBottom: 6 }}>
                         <span className="small bold truncate">
                           {i + 1} {PLACE_MAP[leg.fromPlaceId]?.name} → {i + 2} {PLACE_MAP[leg.toPlaceId]?.name}
                         </span>
-                        <span className="tiny muted">{leg.distanceKm.toFixed(1)}km</span>
                       </div>
                       <TransportPicker
                         value={leg.transport}

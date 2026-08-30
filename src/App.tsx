@@ -20,6 +20,8 @@ import AdminDashboardScreen from './screens/AdminDashboardScreen'
 import OnboardingScreen from './screens/OnboardingScreen'
 import MyCoursesScreen from './screens/MyCoursesScreen'
 
+const SPLASH_SEEN_KEY = 'routiz.splashSeen.v1'
+
 const TABS = [
   { key: '', label: '내 코스' },
   { key: 'explore', label: '탐색' },
@@ -32,13 +34,29 @@ export default function App() {
   const store = useStore()
   const [head, param] = route.segments
 
-  // 최소 노출 시간(짧게 깜빡였다 사라지는 걸 막기 위해) + 실제 로그인 확인이 끝날 때까지 스플래시를 띄운다
-  const [minTimeDone, setMinTimeDone] = useState(false)
+  // 스플래시는 앱을 처음 실행할 때만 보여준다 — 한 번 보여준 뒤에는 localStorage에 표시를
+  // 남겨서, 이후 재실행·새로고침 때는 최소 노출 시간·로그인 확인을 기다리지 않고 바로 화면을 띄운다.
+  const [firstLaunch] = useState(() => {
+    try {
+      return localStorage.getItem(SPLASH_SEEN_KEY) !== '1'
+    } catch {
+      return true
+    }
+  })
+  const [minTimeDone, setMinTimeDone] = useState(!firstLaunch)
   useEffect(() => {
-    const t = setTimeout(() => setMinTimeDone(true), 3000)
+    if (!firstLaunch) return
+    const t = setTimeout(() => {
+      setMinTimeDone(true)
+      try {
+        localStorage.setItem(SPLASH_SEEN_KEY, '1')
+      } catch {
+        /* 저장 공간을 못 쓰는 환경이면 다음에도 스플래시가 다시 뜨는 정도로 조용히 넘어간다 */
+      }
+    }, 3000)
     return () => clearTimeout(t)
-  }, [])
-  const showSplash = !minTimeDone || store.authLoading
+  }, [firstLaunch])
+  const showSplash = firstLaunch && (!minTimeDone || store.authLoading)
 
   useEffect(() => {
     if (!window.location.hash) navigate('/', true)

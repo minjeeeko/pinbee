@@ -238,11 +238,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isSupabaseConfigured || !missingPlaceIds) return
-    db.fetchPlacesByIds(missingPlaceIds.split(','))
+    const ids = missingPlaceIds.split(',')
+    db.fetchPlacesByIds(ids)
       .then((places) => {
-        if (places.length === 0) return
-        places.forEach(registerPlace)
-        setState((s) => ({ ...s, placesVersion: s.placesVersion + 1 }))
+        if (places.length > 0) {
+          places.forEach(registerPlace)
+          setState((s) => ({ ...s, placesVersion: s.placesVersion + 1 }))
+        }
+        // 서버에서도 못 찾은 주소 검색 장소(p-geo-)는 영영 복구할 수 없는 죽은 참조다 —
+        // 저장 전에 새로고침해서 이 브라우저 메모리에서만 사라졌거나, 애초에 저장 안 한
+        // 코스에 담긴 채 남아있는 경우다. 그대로 두면 "담은 장소 수"만 잘못 세고 화면에는
+        // 아무것도 안 뜨는 상태가 계속되니, 코스·저장 장소에서 조용히 지운다.
+        const stillMissing = new Set(ids.filter((id) => !PLACE_MAP[id] && id.startsWith('p-geo-')))
+        if (stillMissing.size === 0) return
+        setState((s) => ({
+          ...s,
+          courses: s.courses.map((c) => {
+            const places = c.places.filter((p) => !stillMissing.has(p.placeId))
+            const coverPlaceId = c.coverPlaceId && stillMissing.has(c.coverPlaceId) ? null : c.coverPlaceId
+            if (places.length === c.places.length && coverPlaceId === c.coverPlaceId) return c
+            return { ...c, places, coverPlaceId }
+          }),
+          savedPlaces: s.savedPlaces.filter((sp) => !stillMissing.has(sp.placeId)),
+        }))
       })
       .catch(() => {})
   }, [missingPlaceIds])
