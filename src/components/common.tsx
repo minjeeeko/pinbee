@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
-import type { Course, CoursePlace, Leg, Place, Transport } from '../lib/types'
+import type { Category, Course, CoursePlace, Leg, Place, Transport } from '../lib/types'
 import { TRANSPORT_LABEL } from '../lib/geo'
-import { PLACE_MAP } from '../data/places'
+import { CATEGORIES, CATEGORY_COLOR, PLACE_MAP } from '../data/places'
 import { Modal, Thumb } from './ui'
 
 export function PlaceRow({
@@ -105,12 +105,14 @@ export function PlaceEditorModal({
   onClose,
   onChange,
   onRemove,
+  onCategoryChange,
 }: {
   open: boolean
   coursePlace: CoursePlace | null
   onClose: () => void
   onChange: (patch: Partial<CoursePlace>) => void
   onRemove: () => void
+  onCategoryChange?: (category: Category) => void
 }) {
   if (!coursePlace) return null
   const place = PLACE_MAP[coursePlace.placeId]
@@ -121,12 +123,38 @@ export function PlaceEditorModal({
           <div className="modal-title" style={{ marginBottom: 2 }}>
             {place?.name}
           </div>
-          <div className="tiny muted truncate">
-            {place?.address.replace('서울 ', '')} · {place?.category}
-          </div>
+          <div className="tiny muted truncate">{place?.address.replace('서울 ', '')}</div>
         </div>
         <Thumb size="lg" category={place?.category} />
       </div>
+
+      {onCategoryChange && (
+        <div className="field">
+          <span className="label">카테고리</span>
+          <div className="chips">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c}
+                className={`chip sm${place?.category === c ? ' on' : ''}`}
+                onClick={() => onCategoryChange(c)}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'inline-block',
+                    width: 8,
+                    height: 8,
+                    borderRadius: 999,
+                    background: CATEGORY_COLOR[c],
+                    marginRight: 5,
+                  }}
+                />
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <label className="field">
         <span className="label">메모</span>

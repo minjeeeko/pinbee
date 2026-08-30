@@ -22,6 +22,8 @@ interface Props {
   memoFlags?: boolean[]
   /** 확대·축소·전체보기 컨트롤 위치. 기본은 우하단, 'top-right'면 우상단에 놓는다(예: 프로필 이미지 바로 아래) */
   toolsPosition?: 'bottom-right' | 'top-right'
+  /** 좌상단에 라벨이 있는 "전체 보기" 버튼을 추가로 보여준다 (우하단 아이콘 버튼과 별개로, 더 눈에 띄게) */
+  showFitAllButton?: boolean
 }
 
 const SEOUL_CENTER = { lat: 37.5665, lng: 126.978 }
@@ -31,6 +33,12 @@ const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
 /** 메모 있음 표시 — 다른 화면의 형광펜 점과 같은 색을 은은한 글로우로 재사용한다 */
 const MEMO_GLOW = '0 0 0 4px rgba(251,225,0,.35),0 0 10px 3px rgba(251,225,0,.5)'
+// 이름표 말풍선의 실제 렌더 높이(줄높이 14 + 위아래 패딩 4 + 위아래 테두리 2)를 line-height로
+// 고정해서, 브라우저·폰트에 따라 달라지지 않는 값으로 anchor를 계산할 수 있게 한다. 이 값이
+// CSS와 어긋나면 확대·축소로 마커가 다시 그려질 때마다(활성 상태가 바뀌며 핀 크기가 달라질
+// 때도) 앵커 오차가 커져 핀이 실제 좌표에서 눈에 띄게 밀려 보인다.
+const LABEL_HEIGHT = 20
+const LABEL_GAP = 4
 
 function pinSize(showNumbers: boolean, active: boolean) {
   return showNumbers ? (active ? 26 : 22) : active ? 24 : 20
@@ -73,6 +81,7 @@ export default function MapCanvas({
   insetBottom = 0,
   memoFlags,
   toolsPosition = 'bottom-right',
+  showFitAllButton = false,
 }: Props) {
   const elRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
@@ -162,7 +171,7 @@ export default function MapCanvas({
       const size = pinSize(showNumbers, active)
       const content = showLabels
         ? `<div style="display:flex;flex-direction:column;align-items:center;">
-             <span style="margin-bottom:4px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:2px 8px;border-radius:999px;font-family:'Wanted Sans Variable',sans-serif;">${
+             <span style="display:block;box-sizing:border-box;height:${LABEL_HEIGHT}px;line-height:${LABEL_HEIGHT - 6}px;margin-bottom:${LABEL_GAP}px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:0 8px;border-radius:999px;font-family:'Wanted Sans Variable',sans-serif;">${
                place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
              }</span>
              ${dot}
@@ -174,7 +183,7 @@ export default function MapCanvas({
         map,
         icon: {
           content,
-          anchor: new naver.maps.Point(size / 2, showLabels ? size + 18 : size / 2),
+          anchor: new naver.maps.Point(size / 2, showLabels ? LABEL_HEIGHT + LABEL_GAP + size / 2 : size / 2),
         },
         zIndex: active ? 200 : 100 - i,
       })
@@ -251,6 +260,16 @@ export default function MapCanvas({
             ? '지도를 불러오는 중이에요…'
             : '네이버 지도를 불러오지 못했어요. Client ID와 등록된 서비스 URL을 확인해주세요.'}
         </div>
+      )}
+
+      {showFitAllButton && (
+        <button
+          className="pill tap"
+          style={{ position: 'absolute', top: insetTop + 12, left: 12, zIndex: 3 }}
+          onClick={fitAll}
+        >
+          전체 보기
+        </button>
       )}
 
       <div

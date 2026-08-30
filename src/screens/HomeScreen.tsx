@@ -202,6 +202,10 @@ export default function HomeScreen() {
           }
           setEditing(null)
         }}
+        onCategoryChange={(category) => {
+          const placeId = course.places.find((p) => p.uid === editing)?.placeId
+          if (placeId) store.setPlaceCategory(placeId, category)
+        }}
       />
     </div>
   )

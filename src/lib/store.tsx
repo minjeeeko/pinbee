@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import type { Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
+import type { Category, Course, CoursePlace, Preferences, Report, SavedPlace, Transport, User, Visibility } from './types'
 import { DEFAULT_PREFS } from '../data/seed'
 import { PLACE_MAP, registerPlace } from '../data/places'
 import { onDirectionsUpdate } from './directions'
@@ -112,6 +112,7 @@ interface StoreValue extends State {
   updateProfile: (patch: Partial<Pick<User, 'name' | 'ageGroup' | 'referralSource' | 'expectedFeatures'>>) => Promise<void>
   uploadAvatar: (file: File) => Promise<void>
   uploadCourseCover: (courseId: string, file: File) => Promise<void>
+  setPlaceCategory: (placeId: string, category: Category) => void
 }
 
 const Ctx = createContext<StoreValue | null>(null)
@@ -509,6 +510,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (isSavedCourseId(courseId)) {
           db.updateCourseRow(courseId, { coverImageUrl: url }).catch(() => toast('저장에 실패했어요. 다시 시도해주세요'))
         }
+      },
+      setPlaceCategory: (placeId, category) => {
+        const place = PLACE_MAP[placeId]
+        if (!place || place.category === category) return
+        registerPlace({ ...place, category })
+        setState((s) => ({ ...s, placesVersion: s.placesVersion + 1 }))
       },
     }
   }, [state, toasts, toast, patchCourse, patchPlaces, ensureGeocodedPlaces])

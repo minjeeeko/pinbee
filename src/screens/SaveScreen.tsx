@@ -180,6 +180,9 @@ export default function SaveScreen({ courseId }: { courseId?: string }) {
               </button>
             ))}
           </div>
+          <div className="tiny muted" style={{ marginTop: 6 }}>
+            가로로 슬라이드해서 더 많은 지역을 확인하세요
+          </div>
         </div>
 
         <div className="field">

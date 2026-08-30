@@ -69,7 +69,7 @@ export default function SavedPlacesScreen() {
           border: '1px solid var(--border)',
         }}
       >
-        <MapCanvas places={places} showRoute={false} showNumbers={false} />
+        <MapCanvas places={places} showRoute={false} showNumbers={false} showFitAllButton />
       </div>
 
       <div className="chips" style={{ padding: '14px 20px 8px' }}>

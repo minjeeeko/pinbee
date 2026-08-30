@@ -20,6 +20,8 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
   const [geoResults, setGeoResults] = useState<Place[]>([])
   const [geoLoading, setGeoLoading] = useState(false)
   const [categoryPickFor, setCategoryPickFor] = useState<Place | null>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
   const results = useMemo(() => {
@@ -151,6 +153,18 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
     setCategoryPickFor(null)
   }
 
+  // 주소·상호명 검색으로 찾은 장소는 이름이 검색어 그대로거나(주소 입력) 네이버가 준 표기라
+  // 원하는 상호명과 다를 수 있어, 담기 전에 직접 이름을 바꿀 수 있게 한다.
+  const confirmRename = (place: Place) => {
+    const name = renameValue.trim()
+    if (name && name !== place.name) {
+      const updated = { ...place, name }
+      registerPlace(updated)
+      setGeoResults((list) => list.map((p) => (p.id === place.id ? updated : p)))
+    }
+    setRenamingId(null)
+  }
+
   const resultCard = (place: Place, extra?: React.ReactNode) => {
     // 주소 검색(geocoding) 결과는 내장 40곳과 달리 PLACE_MAP에 없을 수 있어, 카드에 보이는 순간
     // 등록해둔다 — 코스 추가·저장 액션이 항상 PLACE_MAP[placeId]로 장소를 찾기 때문
@@ -166,7 +180,40 @@ export default function SearchScreen({ courseId }: { courseId?: string }) {
         <div className="list-item">
           <Thumb size="lg" category={place.category} />
           <div className="body">
-            <div className="name truncate">{place.name}</div>
+            {isGeocoded && renamingId === place.id ? (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  className="input"
+                  style={{ height: 32, fontSize: 13, flex: 1, minWidth: 0 }}
+                  autoFocus
+                  value={renameValue}
+                  onChange={(e) => setRenameValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && confirmRename(place)}
+                  placeholder="상호명 입력"
+                />
+                <button className="btn xs primary" style={{ flex: 'none' }} onClick={() => confirmRename(place)}>
+                  완료
+                </button>
+              </div>
+            ) : (
+              <div className="name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="truncate" style={{ minWidth: 0 }}>
+                  {place.name}
+                </span>
+                {isGeocoded && (
+                  <button
+                    className="textbtn"
+                    style={{ fontSize: 11, flexShrink: 0 }}
+                    onClick={() => {
+                      setRenamingId(place.id)
+                      setRenameValue(place.name)
+                    }}
+                  >
+                    상호명 수정
+                  </button>
+                )}
+              </div>
+            )}
             <div className="meta truncate">{categoryLabel}</div>
             {isGeocoded && <div className="tiny muted truncate">{place.address}</div>}
           </div>
