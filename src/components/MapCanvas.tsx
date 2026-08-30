@@ -33,11 +33,7 @@ const KEY_INK = '#ffffff'
 const TEXT_DARK = '#111111'
 /** 메모 있음 표시 — 다른 화면의 형광펜 점과 같은 색을 은은한 글로우로 재사용한다 */
 const MEMO_GLOW = '0 0 0 4px rgba(251,225,0,.35),0 0 10px 3px rgba(251,225,0,.5)'
-// 이름표 말풍선의 실제 렌더 높이(줄높이 14 + 위아래 패딩 4 + 위아래 테두리 2)를 line-height로
-// 고정해서, 브라우저·폰트에 따라 달라지지 않는 값으로 anchor를 계산할 수 있게 한다. 이 값이
-// CSS와 어긋나면 확대·축소로 마커가 다시 그려질 때마다(활성 상태가 바뀌며 핀 크기가 달라질
-// 때도) 앵커 오차가 커져 핀이 실제 좌표에서 눈에 띄게 밀려 보인다.
-const LABEL_HEIGHT = 20
+/** 이름표 말풍선과 핀 사이 간격(px) */
 const LABEL_GAP = 4
 
 function pinSize(showNumbers: boolean, active: boolean) {
@@ -61,12 +57,17 @@ function pinIcon(
     .filter(Boolean)
     .join(',')
   const ring = `${shadows};`
+  // box-sizing:border-box를 반드시 명시한다 — 기본값(content-box)이면 테두리(2px)가 지정한
+  // width·height 바깥에 더 그려져서 실제 렌더 크기가 size보다 커지고, 그만큼 핀의 진짜 중심이
+  // anchor로 잡은 (size/2, size/2)에서 어긋난다. 화면 픽셀 오차 자체는 확대·축소와 무관하게
+  // 늘 일정하지만, 축소할수록 그 오차가 나타내는 실제 거리가 커져서 핀이 위치를 벗어난 것처럼
+  // 두드러져 보인다.
   if (showNumbers) {
     const label = `display:flex;align-items:center;justify-content:center;color:${KEY_INK};font-weight:800;font-size:${active ? 12 : 11}px;font-family:'Wanted Sans Variable',sans-serif;`
-    return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${index + 1}</div>`
+    return `<div style="box-sizing:border-box;width:${size}px;height:${size}px;border-radius:999px;background:${color};border:2px solid #fff;${ring}${label}">${index + 1}</div>`
   }
   const fontSize = Math.round(size * 0.58)
-  return `<div style="width:${size}px;height:${size}px;border-radius:999px;background:#fff;border:2px solid ${color};${ring}display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;">${CATEGORY_EMOJI[category]}</div>`
+  return `<div style="box-sizing:border-box;width:${size}px;height:${size}px;border-radius:999px;background:#fff;border:2px solid ${color};${ring}display:flex;align-items:center;justify-content:center;font-size:${fontSize}px;line-height:1;">${CATEGORY_EMOJI[category]}</div>`
 }
 
 export default function MapCanvas({
@@ -169,9 +170,15 @@ export default function MapCanvas({
       const hasMemo = memoFlags?.[i] ?? false
       const dot = pinIcon(i, showNumbers, active, color, place.category, hasMemo)
       const size = pinSize(showNumbers, active)
+      // 라벨(말풍선)은 핀과 같은 흐름(flex) 안에 두지 않고, 핀 바로 위에 절대 위치로 얹는다.
+      // 이렇게 해야 상호명 길이에 따라 말풍선 너비가 달라져도 컨테이너 자체의 너비는 항상
+      // 핀 크기(size)로 고정되어, anchor를 늘 핀의 정중앙(size/2, size/2)으로 잡을 수 있다.
+      // 예전처럼 말풍선을 포함한 세로 스택 전체의 크기로 anchor를 어림잡으면, 이름 길이·폰트에
+      // 따라 실제 렌더 크기가 조금씩 달라져 핀이 실제 좌표에서 벗어나 보이고(특히 축소했을 때
+      // 그 오차가 도로·건물 위치와 비교돼 두드러진다), 말풍선도 핀 중앙에 안 맞고 치우쳐 보인다.
       const content = showLabels
-        ? `<div style="display:flex;flex-direction:column;align-items:center;">
-             <span style="display:block;box-sizing:border-box;height:${LABEL_HEIGHT}px;line-height:${LABEL_HEIGHT - 6}px;margin-bottom:${LABEL_GAP}px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:0 8px;border-radius:999px;font-family:'Wanted Sans Variable',sans-serif;">${
+        ? `<div style="position:relative;width:${size}px;height:${size}px;">
+             <span style="position:absolute;left:50%;bottom:100%;transform:translateX(-50%);margin-bottom:${LABEL_GAP}px;white-space:nowrap;font-size:11px;font-weight:700;color:${TEXT_DARK};background:rgba(255,255,255,.92);border:1px solid #4d4d4d;padding:2px 8px;border-radius:999px;font-family:'Wanted Sans Variable',sans-serif;">${
                place.name.length > 9 ? place.name.slice(0, 8) + '…' : place.name
              }</span>
              ${dot}
@@ -181,10 +188,7 @@ export default function MapCanvas({
       const marker = new naver.maps.Marker({
         position: positions[i],
         map,
-        icon: {
-          content,
-          anchor: new naver.maps.Point(size / 2, showLabels ? LABEL_HEIGHT + LABEL_GAP + size / 2 : size / 2),
-        },
+        icon: { content, anchor: new naver.maps.Point(size / 2, size / 2) },
         zIndex: active ? 200 : 100 - i,
       })
       if (onSelect) {

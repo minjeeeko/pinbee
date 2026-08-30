@@ -13,6 +13,7 @@ export default function SavedPlacesScreen() {
   const [cat, setCat] = useState<Category | '전체'>('전체')
   const [dupTarget, setDupTarget] = useState<string | null>(null)
   const [editingMemo, setEditingMemo] = useState<Set<string>>(new Set())
+  const [mapExpanded, setMapExpanded] = useState(false)
   const course = store.draft
 
   const toggleMemoEdit = (placeId: string) =>
@@ -69,8 +70,24 @@ export default function SavedPlacesScreen() {
           border: '1px solid var(--border)',
         }}
       >
-        <MapCanvas places={places} showRoute={false} showNumbers={false} showFitAllButton />
+        <MapCanvas places={places} showRoute={false} showNumbers={false} />
+        <button className="pill tap" style={{ position: 'absolute', top: 12, left: 12, zIndex: 3 }} onClick={() => setMapExpanded(true)}>
+          전체 보기
+        </button>
       </div>
+
+      {mapExpanded && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'var(--canvas)' }}>
+          <MapCanvas places={places} showRoute={false} showNumbers={false} insetTop={70} />
+          <button
+            className="btn sm"
+            style={{ position: 'absolute', top: 14, left: 14, zIndex: 5 }}
+            onClick={() => setMapExpanded(false)}
+          >
+            닫기
+          </button>
+        </div>
+      )}
 
       <div className="chips" style={{ padding: '14px 20px 8px' }}>
         {(['전체', ...CATEGORIES] as const).map((c) => (
